@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "417071398695",
+    "project_id": "coachup-980de",
+    "storage_bucket": "coachup-980de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:417071398695:android:2e40a7d9f103286b333302",
+        "android_client_info": {
+          "package_name": "com.example.teampulse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLd1nzjR5CSjuajdPplNtBIhaNtPyv7Ag"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
