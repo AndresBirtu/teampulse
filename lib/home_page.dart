@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'recuperarContrasena_page.dart'; 
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -81,6 +82,24 @@ class HomePage extends StatelessWidget {
                         child: const Text(
                           "Iniciar",
                           style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const RecuperarContrasenaPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "¿Olvidaste tu contraseña?",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),
