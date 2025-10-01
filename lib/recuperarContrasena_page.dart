@@ -27,7 +27,7 @@ class _RecuperarContrasenaPageState extends State<RecuperarContrasenaPage> {
           backgroundColor: Colors.green[700],
         ),
       );
-      Navigator.of(context).pop(); // volver atrás tras enviar
+      Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
       String mensaje = 'Error al enviar el correo.';
       if (e.code == 'user-not-found') {
