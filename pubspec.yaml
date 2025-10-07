@@ -12,10 +12,11 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
-  # 🔹 DEPENDENCIAS DE FIREBASE
-  firebase_core: ^2.20.0       # compatible con Flutter 3.8.x
-  firebase_auth: ^4.5.1        # compatible
-  cloud_firestore: ^4.17.5     # compatible
+  # 🔹 Últimas versiones estables (2025)
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.4.4
+
 
 dev_dependencies:
   flutter_test:
