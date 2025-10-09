@@ -44,6 +44,7 @@ class HomePage extends StatelessWidget {
   }
 }
 
+// ---------------- LOGIN ----------------
 class _LoginTab extends StatefulWidget {
   const _LoginTab();
 
@@ -144,6 +145,7 @@ class _LoginTabState extends State<_LoginTab> {
   }
 }
 
+// ---------------- REGISTRO ----------------
 class _RegisterTab extends StatefulWidget {
   const _RegisterTab();
 
@@ -161,6 +163,13 @@ class _RegisterTabState extends State<_RegisterTab> {
   final TextEditingController _codigoEquipoController = TextEditingController();
   final TextEditingController _nombreEquipoController = TextEditingController();
 
+  // 🔹 Generar código de equipo corto
+  String generarCodigoEquipo() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return List.generate(6, (i) => chars[(now + i) % chars.length]).join();
+  }
+
   Future<void> _registrar() async {
     if (_nombreController.text.trim().isEmpty ||
         _correoController.text.trim().isEmpty ||
@@ -175,71 +184,67 @@ class _RegisterTabState extends State<_RegisterTab> {
     }
     setState(() => _loading = true);
     try {
-      debugPrint("📌 Registrando usuario con correo: ${_correoController.text.trim()}");
-
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _correoController.text.trim(),
         password: _contrasenaController.text.trim(),
       );
 
       final uid = cred.user!.uid;
-      debugPrint("✅ Usuario creado en FirebaseAuth con UID: $uid");
-
       final db = FirebaseFirestore.instance;
 
-     
-      debugPrint("📌 Creando documento en users...");
+      // Crear usuario
       await db.collection("users").doc(uid).set({
         "name": _nombreController.text.trim(),
         "email": _correoController.text.trim(),
         "role": _rol,
       }, SetOptions(merge: true));
-      debugPrint("✅ Documento creado en users con UID: $uid");
 
       if (_rol == "entrenador") {
-       
-        debugPrint("📌 Creando equipo...");
+        final teamCode = generarCodigoEquipo();
+
         final teamRef = await db.collection("teams").add({
           "name": _nombreEquipoController.text.trim(),
           "coachId": uid,
+          "teamCode": teamCode,
           "createdAt": FieldValue.serverTimestamp(),
         });
-        debugPrint("✅ Equipo creado con ID: ${teamRef.id}");
 
-        debugPrint("📌 Añadiendo entrenador al equipo...");
         await teamRef.collection("players").doc(uid).set({
           "playerId": uid,
           "name": _nombreController.text.trim(),
           "email": _correoController.text.trim(),
           "role": "entrenador",
         });
-        debugPrint("✅ Entrenador añadido al equipo");
 
-        
         await db.collection("users").doc(uid).set({
+          "teamId": teamRef.id,
           "teamName": _nombreEquipoController.text.trim(),
-          "teamCode": teamRef.id,
+          "teamCode": teamCode,
         }, SetOptions(merge: true));
-        debugPrint("✅ Usuario actualizado con datos del equipo");
       } else if (_rol == "jugador") {
-        debugPrint("📌 Jugador intentando unirse al equipo con ID: ${_codigoEquipoController.text.trim()}");
-        final teamId = _codigoEquipoController.text.trim();
-        final teamDoc = await db.collection("teams").doc(teamId).get();
-        if (!teamDoc.exists) {
+        final teamSnap = await db.collection("teams")
+            .where("teamCode", isEqualTo: _codigoEquipoController.text.trim())
+            .limit(1)
+            .get();
+
+        if (teamSnap.docs.isEmpty) {
           throw Exception("El código de equipo no existe");
         }
-        await db.collection("teams").doc(teamId).collection("players").doc(uid).set({
+
+        final teamDoc = teamSnap.docs.first;
+
+        await teamDoc.reference.collection("players").doc(uid).set({
           "playerId": uid,
           "name": _nombreController.text.trim(),
           "email": _correoController.text.trim(),
           "role": "jugador",
         });
-        debugPrint("✅ Jugador añadido al equipo");
 
         await db.collection("users").doc(uid).set({
-          "teamCode": teamId,
+          "teamId": teamDoc.id,
+          "teamName": teamDoc["name"],
+          "teamCode": teamDoc["teamCode"],
         }, SetOptions(merge: true));
-        debugPrint("✅ Usuario actualizado con código de equipo");
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -250,17 +255,7 @@ class _RegisterTabState extends State<_RegisterTab> {
         context,
         MaterialPageRoute(builder: (context) => const DashboardPage()),
       );
-    } on FirebaseAuthException catch (e) {
-      debugPrint("❌ Error FirebaseAuth: ${e.code} -> ${e.message}");
-      String msg = "Error al registrarse";
-      if (e.code == "email-already-in-use") msg = "Ese correo ya está en uso";
-      if (e.code == "weak-password") msg = "La contraseña es demasiado débil";
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
     } catch (e) {
-      debugPrint("❌ Error genérico: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red),
       );
@@ -331,7 +326,7 @@ class _RegisterTabState extends State<_RegisterTab> {
               TextField(
                 controller: _codigoEquipoController,
                 decoration: InputDecoration(
-                  labelText: "Código de equipo (ID)",
+                  labelText: "Código de equipo",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),

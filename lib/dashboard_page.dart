@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'match_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -9,7 +10,10 @@ class DashboardPage extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
 
-    final doc = await FirebaseFirestore.instance.collection("users").doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .get();
     return doc.data();
   }
 
@@ -26,73 +30,53 @@ class DashboardPage extends StatelessWidget {
               await FirebaseAuth.instance.signOut();
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-          )
+          ),
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _getUserData(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("No se encontraron datos del usuario"));
           }
 
           final userData = snapshot.data!;
           final role = userData["role"] ?? "jugador";
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                
-                Text("👋 Hola, ${userData["name"] ?? "Usuario"}",
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-
-              
                 Card(
-                  color: Colors.blue[50],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: const Icon(Icons.person, size: 40, color: Colors.blue),
-                    title: Text(userData["name"] ?? ""),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Correo: ${userData["email"] ?? ""}"),
-                        Text("Rol: $role"),
-                        if (userData["teamName"] != null)
-                          Text("Equipo: ${userData["teamName"]}"),
-                        if (userData["teamCode"] != null)
-                          Text("Código: ${userData["teamCode"]}"),
-                      ],
-                    ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                
-                Card(
-                  color: Colors.orange[50],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  color: Colors.blue[800],
+                  elevation: 4,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
                       children: [
-                        const Text("📊 Estadísticas", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: const [
-                            _StatBox(label: "Partidos", value: "12"),
-                            _StatBox(label: "Goles", value: "8"),
-                            _StatBox(label: "Asistencias", value: "5"),
-                          ],
+                        const CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.white,
+                          child: Icon(
+                            Icons.person,
+                            size: 32,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            "Hola, ${userData["name"] ?? "Usuario"} 👋",
+                            style: const TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -101,66 +85,131 @@ class DashboardPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-
-                Card(
-                  color: Colors.green[50],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text("⚡ Acciones rápidas", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: role == "entrenador"
-                              ? [
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.group_add),
-                                    label: const Text("Invitar jugador"),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.edit),
-                                    label: const Text("Editar equipo"),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.bar_chart),
-                                    label: const Text("Estadísticas del equipo"),
-                                  ),
-                                ]
-                              : [
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.bar_chart),
-                                    label: const Text("Mis estadísticas"),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.event),
-                                    label: const Text("Próximos partidos"),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () {},
-                                    icon: const Icon(Icons.edit),
-                                    label: const Text("Editar perfil"),
-                                  ),
-                                ],
-                        ),
-                      ],
-                    ),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: (role == "entrenador")
+                      ? [
+                          _StatCard(
+                            icon: Icons.sports_soccer,
+                            label: "Jugados",
+                            value: "15",
+                            color: Colors.orange,
+                          ),
+                          _StatCard(
+                            icon: Icons.emoji_events,
+                            label: "Ganados",
+                            value: "10",
+                            color: Colors.green,
+                          ),
+                          _StatCard(
+                            icon: Icons.cancel,
+                            label: "Perdidos",
+                            value: "5",
+                            color: Colors.red,
+                          ),
+                        ]
+                      : [
+                          _StatCard(
+                            icon: Icons.sports_soccer,
+                            label: "Partidos",
+                            value: "12",
+                            color: Colors.blue,
+                          ),
+                          _StatCard(
+                            icon: Icons.sports,
+                            label: "Goles",
+                            value: "8",
+                            color: Colors.green,
+                          ),
+                          _StatCard(
+                            icon: Icons.group,
+                            label: "Asistencias",
+                            value: "5",
+                            color: Colors.orange,
+                          ),
+                        ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
-                
-                if (role == "entrenador" && userData["teamCode"] != null)
-                  _TeamPlayers(teamCode: userData["teamCode"]),
+                role == "entrenador"
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Gestión del equipo",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.group),
+                                  title: const Text("Ver jugadores"),
+                                  onTap: () {},
+                                ),
+                                const Divider(),
+                                ListTile(
+                                  leading: const Icon(Icons.person_add),
+                                  title: const Text("Invitar jugadores"),
+                                  onTap: () {},
+                                ),
+                                const Divider(),
+                                ListTile(
+                                  leading: const Icon(Icons.bar_chart),
+                                  title: const Text(
+                                    "Ver estadísticas del equipo",
+                                  ),
+                                  onTap: () {},
+                                ),
+                                const Divider(),
+                                ListTile(
+                                  leading: const Icon(Icons.sports_soccer),
+                                  title: const Text("Gestión de partidos"),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MatchesPage(
+                                          teamId: userData["teamId"],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Próximos partidos",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _MatchCard(
+                            "Equipo A vs Equipo B",
+                            "Sábado 12:00 - Campo 1",
+                          ),
+                          _MatchCard(
+                            "Equipo C vs Equipo D",
+                            "Domingo 18:00 - Campo 2",
+                          ),
+                        ],
+                      ),
               ],
             ),
           );
@@ -170,65 +219,56 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
-
-class _StatBox extends StatelessWidget {
+class _StatCard extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  const _StatBox({required this.label, required this.value});
+  final Color color;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        Text(label),
-      ],
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Text(label),
+          ],
+        ),
+      ),
     );
   }
 }
 
+class _MatchCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
 
-class _TeamPlayers extends StatelessWidget {
-  final String teamCode;
-  const _TeamPlayers({required this.teamCode});
+  const _MatchCard(this.title, this.subtitle);
 
   @override
   Widget build(BuildContext context) {
-    final playersRef = FirebaseFirestore.instance
-        .collection("teams")
-        .doc(teamCode)
-        .collection("players");
-
     return Card(
-      color: Colors.purple[50],
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("👥 Jugadores del equipo", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            StreamBuilder<QuerySnapshot>(
-              stream: playersRef.snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Text("Cargando jugadores...");
-                final docs = snapshot.data!.docs;
-                if (docs.isEmpty) return const Text("No hay jugadores en el equipo");
-                return Column(
-                  children: docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    return ListTile(
-                      leading: const Icon(Icons.person),
-                      title: Text(data["name"] ?? ""),
-                      subtitle: Text(data["role"] ?? ""),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-          ],
-        ),
+      child: ListTile(
+        leading: Icon(Icons.sports_soccer, color: Colors.blue[800]),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
       ),
     );
   }
