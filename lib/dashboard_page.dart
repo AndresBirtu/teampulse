@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'match_page.dart';
+import 'players_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -9,11 +10,7 @@ class DashboardPage extends StatelessWidget {
   Future<Map<String, dynamic>?> _getUserData() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;
-
-    final doc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .get();
+    final doc = await FirebaseFirestore.instance.collection("users").doc(uid).get();
     return doc.data();
   }
 
@@ -82,9 +79,7 @@ class DashboardPage extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: (role == "entrenador")
@@ -129,9 +124,7 @@ class DashboardPage extends StatelessWidget {
                           ),
                         ],
                 ),
-
                 const SizedBox(height: 30),
-
                 role == "entrenador"
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +146,16 @@ class DashboardPage extends StatelessWidget {
                                 ListTile(
                                   leading: const Icon(Icons.group),
                                   title: const Text("Ver jugadores"),
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PlayersPage(
+                                          teamId: userData["teamId"],
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const Divider(),
                                 ListTile(
@@ -164,9 +166,7 @@ class DashboardPage extends StatelessWidget {
                                 const Divider(),
                                 ListTile(
                                   leading: const Icon(Icons.bar_chart),
-                                  title: const Text(
-                                    "Ver estadísticas del equipo",
-                                  ),
+                                  title: const Text("Ver estadísticas del equipo"),
                                   onTap: () {},
                                 ),
                                 const Divider(),

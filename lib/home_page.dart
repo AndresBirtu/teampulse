@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
           backgroundColor: Colors.blue[800],
           centerTitle: true,
           title: const Text(
-            "CoachUp",
+            "TeamPulse",
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
