@@ -21,13 +21,28 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
   late TextEditingController golesController;
   late TextEditingController asistenciasController;
   late TextEditingController posicionController;
+  late TextEditingController partidosController;
+  late TextEditingController minutosController;
+  late TextEditingController amarillasController;
+  late TextEditingController rojasController;
 
   @override
   void initState() {
     super.initState();
-    golesController = TextEditingController(text: widget.playerData['goles']?.toString() ?? '0');
-    asistenciasController = TextEditingController(text: widget.playerData['asistencias']?.toString() ?? '0');
-    posicionController = TextEditingController(text: widget.playerData['posicion'] ?? '');
+    golesController =
+        TextEditingController(text: widget.playerData['goles']?.toString() ?? '0');
+    asistenciasController =
+        TextEditingController(text: widget.playerData['asistencias']?.toString() ?? '0');
+    posicionController =
+        TextEditingController(text: widget.playerData['posicion'] ?? '');
+    partidosController =
+        TextEditingController(text: widget.playerData['partidos']?.toString() ?? '0');
+    minutosController =
+        TextEditingController(text: widget.playerData['minutos']?.toString() ?? '0');
+    amarillasController =
+        TextEditingController(text: widget.playerData['tarjetas_amarillas']?.toString() ?? '0');
+    rojasController =
+        TextEditingController(text: widget.playerData['tarjetas_rojas']?.toString() ?? '0');
   }
 
   Future<void> _guardarCambios() async {
@@ -40,6 +55,10 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
       'goles': int.tryParse(golesController.text) ?? 0,
       'asistencias': int.tryParse(asistenciasController.text) ?? 0,
       'posicion': posicionController.text,
+      'partidos': int.tryParse(partidosController.text) ?? 0,
+      'minutos': int.tryParse(minutosController.text) ?? 0,
+      'tarjetas_amarillas': int.tryParse(amarillasController.text) ?? 0,
+      'tarjetas_rojas': int.tryParse(rojasController.text) ?? 0,
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -56,13 +75,25 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
         title: Text("Editar jugador: ${widget.playerData['name']}"),
         backgroundColor: Colors.blue[800],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: posicionController,
               decoration: const InputDecoration(labelText: "Posición"),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: partidosController,
+              decoration: const InputDecoration(labelText: "Partidos jugados"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: minutosController,
+              decoration: const InputDecoration(labelText: "Minutos jugados"),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 10),
             TextField(
@@ -74,6 +105,18 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
             TextField(
               controller: asistenciasController,
               decoration: const InputDecoration(labelText: "Asistencias"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: amarillasController,
+              decoration: const InputDecoration(labelText: "Tarjetas amarillas"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: rojasController,
+              decoration: const InputDecoration(labelText: "Tarjetas rojas"),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
