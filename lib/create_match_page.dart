@@ -15,24 +15,37 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
   DateTime? _matchDate;
 
   Future<void> _saveMatch() async {
-    if (_teamAController.text.isEmpty || _teamBController.text.isEmpty || _matchDate == null) {
+    if (_teamAController.text.isEmpty ||
+        _teamBController.text.isEmpty ||
+        _matchDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Completa todos los campos"), backgroundColor: Colors.red),
       );
       return;
     }
 
-    await FirebaseFirestore.instance
-        .collection("teams")
-        .doc(widget.teamId)
-        .collection("matches")
-        .add({
-      "teamA": _teamAController.text.trim(),
-      "teamB": _teamBController.text.trim(),
-      "date": Timestamp.fromDate(_matchDate!),
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection("teams")
+          .doc(widget.teamId)
+          .collection("matches")
+          .add({
+        "teamA": _teamAController.text.trim(),
+        "teamB": _teamBController.text.trim(),
+        "date": Timestamp.fromDate(_matchDate!),
+        "createdAt": FieldValue.serverTimestamp(),
+      });
 
-    Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Partido guardado correctamente")),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al guardar: $e")),
+      );
+    }
   }
 
   @override
@@ -59,9 +72,11 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(_matchDate == null
-                      ? "Selecciona la fecha"
-                      : "${_matchDate!.day}/${_matchDate!.month}/${_matchDate!.year} ${_matchDate!.hour}:${_matchDate!.minute.toString().padLeft(2,'0')}"),
+                  child: Text(
+                    _matchDate == null
+                        ? "Selecciona la fecha"
+                        : "${_matchDate!.day}/${_matchDate!.month}/${_matchDate!.year} ${_matchDate!.hour}:${_matchDate!.minute.toString().padLeft(2, '0')}",
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -78,7 +93,8 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
                       );
                       if (time != null) {
                         setState(() {
-                          _matchDate = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                          _matchDate = DateTime(
+                              date.year, date.month, date.day, time.hour, time.minute);
                         });
                       }
                     }
@@ -92,7 +108,8 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saveMatch,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
                 child: const Text("Guardar partido"),
               ),
             )

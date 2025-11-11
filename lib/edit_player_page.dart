@@ -46,26 +46,32 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
   }
 
   Future<void> _guardarCambios() async {
-    await FirebaseFirestore.instance
-        .collection('teams')
-        .doc(widget.teamId)
-        .collection('players')
-        .doc(widget.playerId)
-        .update({
-      'goles': int.tryParse(golesController.text) ?? 0,
-      'asistencias': int.tryParse(asistenciasController.text) ?? 0,
-      'posicion': posicionController.text,
-      'partidos': int.tryParse(partidosController.text) ?? 0,
-      'minutos': int.tryParse(minutosController.text) ?? 0,
-      'tarjetas_amarillas': int.tryParse(amarillasController.text) ?? 0,
-      'tarjetas_rojas': int.tryParse(rojasController.text) ?? 0,
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .collection('players')
+          .doc(widget.playerId)
+          .set({
+        'goles': int.tryParse(golesController.text) ?? 0,
+        'asistencias': int.tryParse(asistenciasController.text) ?? 0,
+        'posicion': posicionController.text,
+        'partidos': int.tryParse(partidosController.text) ?? 0,
+        'minutos': int.tryParse(minutosController.text) ?? 0,
+        'tarjetas_amarillas': int.tryParse(amarillasController.text) ?? 0,
+        'tarjetas_rojas': int.tryParse(rojasController.text) ?? 0,
+      }, SetOptions(merge: true));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Datos actualizados correctamente")),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Datos actualizados correctamente")),
+      );
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al guardar: $e")),
+      );
+    }
   }
 
   @override
@@ -120,10 +126,15 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _guardarCambios,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
-              child: const Text("Guardar cambios"),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _guardarCambios,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[800],
+                ),
+                child: const Text("Guardar cambios"),
+              ),
             ),
           ],
         ),
