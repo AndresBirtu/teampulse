@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // === Colección de usuarios ===
+    match /users/{userId} {
+      // Cada usuario solo puede leer y editar su propio perfil
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // === Equipos y subcolecciones ===
+    match /teams/{teamId} {
+      
+      // Todos los usuarios autenticados pueden leer información básica del equipo
+      allow read: if request.auth != null;
+      
+      // Solo los entrenadores pueden crear o modificar la información general del equipo
+      allow write: if request.auth != null &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
+
+      // === Jugadores dentro de un equipo ===
+      match /players/{playerId} {
+        
+        // Los entrenadores pueden leer y modificar todos los jugadores
+        allow read, write: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
+
+        // Los jugadores pueden LEER toda la colección de jugadores (para ver promedios del equipo)
+        allow read: if request.auth != null &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "jugador" &&
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == request.resource.ref.parent.parent.id;
+
+        // Los jugadores **no pueden escribir** sus propios datos
+        allow write: if false;
+      }
+
+      // === Partidos de un equipo ===
+      match /matches/{matchId} {
+        // Todos los usuarios autenticados pueden leer los partidos
+        allow read: if request.auth != null;
+
+        // Solo los entrenadores pueden crear, editar o borrar partidos
+        allow write: if request.auth != null &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
+      }
+    }
+  }
+}

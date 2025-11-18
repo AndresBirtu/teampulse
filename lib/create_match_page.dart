@@ -55,20 +55,32 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
         title: const Text("Crear partido"),
         backgroundColor: Colors.blue[800],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _teamAController,
-              decoration: const InputDecoration(labelText: "Equipo A"),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _teamAController,
+                      decoration: const InputDecoration(labelText: "Equipo A", border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _teamBController,
+                      decoration: const InputDecoration(labelText: "Equipo B", border: OutlineInputBorder()),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _teamBController,
-              decoration: const InputDecoration(labelText: "Equipo B"),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -108,11 +120,14 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saveMatch,
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: Colors.blue[800]),
-                child: const Text("Guardar partido"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[800],
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text("Guardar partido", style: TextStyle(fontSize: 16)),
               ),
-            )
+            ),
           ],
         ),
       ),

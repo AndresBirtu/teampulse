@@ -205,12 +205,14 @@ class _RegisterTabState extends State<_RegisterTab> {
         final teamRef = await db.collection("teams").add({
           "name": _nombreEquipoController.text.trim(),
           "coachId": uid,
+          "ownerId": uid,
           "teamCode": teamCode,
           "createdAt": FieldValue.serverTimestamp(),
         });
 
         await teamRef.collection("players").doc(uid).set({
           "playerId": uid,
+          "teamId": teamRef.id,
           "name": _nombreController.text.trim(),
           "email": _correoController.text.trim(),
           "role": "entrenador",
@@ -235,6 +237,7 @@ class _RegisterTabState extends State<_RegisterTab> {
 
         await teamDoc.reference.collection("players").doc(uid).set({
           "playerId": uid,
+          "teamId": teamDoc.id,
           "name": _nombreController.text.trim(),
           "email": _correoController.text.trim(),
           "role": "jugador",

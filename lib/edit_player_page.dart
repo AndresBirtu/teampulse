@@ -83,60 +83,75 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: posicionController,
-              decoration: const InputDecoration(labelText: "Posición"),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: partidosController,
-              decoration: const InputDecoration(labelText: "Partidos jugados"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: minutosController,
-              decoration: const InputDecoration(labelText: "Minutos jugados"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: golesController,
-              decoration: const InputDecoration(labelText: "Goles"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: asistenciasController,
-              decoration: const InputDecoration(labelText: "Asistencias"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: amarillasController,
-              decoration: const InputDecoration(labelText: "Tarjetas amarillas"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: rojasController,
-              decoration: const InputDecoration(labelText: "Tarjetas rojas"),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _guardarCambios,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[800],
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                TextField(
+                  controller: posicionController,
+                  decoration: const InputDecoration(labelText: "Posición", border: OutlineInputBorder()),
                 ),
-                child: const Text("Guardar cambios"),
-              ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: partidosController,
+                  decoration: const InputDecoration(labelText: "Partidos jugados", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: minutosController,
+                  decoration: const InputDecoration(labelText: "Minutos jugados", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: golesController,
+                  decoration: const InputDecoration(labelText: "Goles", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: asistenciasController,
+                  decoration: const InputDecoration(labelText: "Asistencias", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: amarillasController,
+                  decoration: const InputDecoration(labelText: "Tarjetas amarillas", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+            const SizedBox(height: 10),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: rojasController,
+                  decoration: const InputDecoration(labelText: "Tarjetas rojas", border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _guardarCambios,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[800],
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text("Guardar cambios", style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

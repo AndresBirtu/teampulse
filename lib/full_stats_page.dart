@@ -41,6 +41,24 @@ class FullStatsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Card(
+                  color: Colors.blue[800],
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person, size: 36, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(playerName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _StatCard(label: 'Partidos jugados', value: playerData['partidos']?.toString() ?? '0'),
                 _StatCard(label: 'Goles', value: playerData['goles']?.toString() ?? '0'),
                 _StatCard(label: 'Asistencias', value: playerData['asistencias']?.toString() ?? '0'),
@@ -48,7 +66,6 @@ class FullStatsPage extends StatelessWidget {
                 _StatCard(label: 'Tarjetas amarillas', value: playerData['tarjetas_amarillas']?.toString() ?? '0'),
                 _StatCard(label: 'Tarjetas rojas', value: playerData['tarjetas_rojas']?.toString() ?? '0'),
                 const SizedBox(height: 20),
-                
               ],
             ),
           );
@@ -67,16 +84,22 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 3,
+      elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16)),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                const Icon(Icons.bar_chart, size: 18, color: Colors.blue),
+                const SizedBox(width: 8),
+                Text(label, style: const TextStyle(fontSize: 15)),
+              ],
+            ),
+            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
