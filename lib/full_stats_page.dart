@@ -25,7 +25,8 @@ class FullStatsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Estadísticas completas: $playerName'),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: playerStream,
@@ -42,7 +43,7 @@ class FullStatsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Card(
-                  color: Colors.blue[800],
+                  color: Theme.of(context).primaryColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 3,
                   child: Padding(

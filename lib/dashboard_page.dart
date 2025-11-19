@@ -10,6 +10,18 @@ import 'team_stats_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
+  
+  void _showMatchStatsDialog(BuildContext context, String title, int count) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text('Total: $count partidos'),
+        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cerrar'))],
+      ),
+    );
+  }
+
   void _showInviteDialog(BuildContext context, String teamId) {
     showDialog(
       context: context,
@@ -155,7 +167,7 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Dashboard"),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -211,7 +223,7 @@ class DashboardPage extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  color: Colors.blue[800],
+                  color: Theme.of(context).primaryColor,
                   elevation: 4,
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -260,64 +272,92 @@ class DashboardPage extends StatelessWidget {
 
                     return Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: (role == "entrenador")
-                              ? [
-                                  _StatCard(
-                                    icon: Icons.sports_soccer,
-                                    label: "Jugados",
-                                    value: "15",
-                                    color: Colors.orange,
+                        if (role == "entrenador")
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('teams')
+                                .doc(teamId)
+                                .collection('matches')
+                                .snapshots(),
+                            builder: (context, matchSnapshot) {
+                              int played = 0, won = 0, lost = 0;
+                              if (matchSnapshot.hasData) {
+                                final matches = matchSnapshot.data?.docs ?? [];
+                                played = matches.length;
+                                for (var m in matches) {
+                                  final data = m.data() as Map<String, dynamic>?;
+                                  final golesTeamA = (data?['golesTeamA'] as int?) ?? 0;
+                                  final golesTeamB = (data?['golesTeamB'] as int?) ?? 0;
+                                  if (golesTeamA > golesTeamB) won++;
+                                  if (golesTeamA < golesTeamB) lost++;
+                                }
+                              }
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Jugados', played),
+                                    child: _StatCard(
+                                      icon: Icons.sports_soccer,
+                                      label: "Jugados",
+                                      value: played.toString(),
+                                      color: Colors.orange,
+                                    ),
                                   ),
-                                  _StatCard(
-                                    icon: Icons.emoji_events,
-                                    label: "Ganados",
-                                    value: "10",
-                                    color: Colors.green,
+                                  GestureDetector(
+                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Ganados', won),
+                                    child: _StatCard(
+                                      icon: Icons.emoji_events,
+                                      label: "Ganados",
+                                      value: won.toString(),
+                                      color: Colors.green,
+                                    ),
                                   ),
-                                  _StatCard(
-                                    icon: Icons.cancel,
-                                    label: "Perdidos",
-                                    value: "5",
-                                    color: Colors.red,
-                                  ),
-                                ]
-                              : [
-                                  _StatCard(
-                                    icon: Icons.sports_soccer,
-                                    label: "Partidos",
-                                    value: (statsData["partidos"] ?? 0)
-                                        .toString(),
-                                    color: Colors.blue,
-                                  ),
-                                  _StatCard(
-                                    icon: Icons.sports,
-                                    label: "Goles",
-                                    value: (statsData["goles"] ?? 0).toString(),
-                                    color: Colors.green,
-                                  ),
-                                  _StatCard(
-                                    icon: Icons.group,
-                                    label: "Asistencias",
-                                    value: (statsData["asistencias"] ?? 0)
-                                        .toString(),
-                                    color: Colors.orange,
+                                  GestureDetector(
+                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Perdidos', lost),
+                                    child: _StatCard(
+                                      icon: Icons.cancel,
+                                      label: "Perdidos",
+                                      value: lost.toString(),
+                                      color: Colors.red,
+                                    ),
                                   ),
                                 ],
-                        ),
+                              );
+                            },
+                          )
+                        else
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _StatCard(
+                                icon: Icons.sports_soccer,
+                                label: "Partidos",
+                                value: (statsData["partidos"] ?? 0)
+                                    .toString(),
+                                color: Colors.blue,
+                              ),
+                              _StatCard(
+                                icon: Icons.sports,
+                                label: "Goles",
+                                value: (statsData["goles"] ?? 0).toString(),
+                                color: Colors.green,
+                              ),
+                              _StatCard(
+                                icon: Icons.group,
+                                label: "Asistencias",
+                                value: (statsData["asistencias"] ?? 0)
+                                    .toString(),
+                                color: Colors.orange,
+                              ),
+                            ],
+                          ),
                         if (role == "jugador")
                           Column(
                             children: [
-                              Padding(
+                                  Padding(
                                 padding: const EdgeInsets.only(top: 12),
                                 child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue[800],
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
                                   icon: const Icon(
                                     Icons.bar_chart,
                                     color: Colors.white,
@@ -391,6 +431,9 @@ class DashboardPage extends StatelessWidget {
                                   final myG = (statsData['goles'] ?? 0) as int;
                                   final myA = (statsData['asistencias'] ?? 0) as int;
                                   final myM = (statsData['minutos'] ?? 0) as int;
+                                  
+                                  final myGoalsPerMin = myM > 0 ? (myG / myM * 90).toStringAsFixed(2) : '0.00';
+                                  final myAssistsPerMin = myM > 0 ? (myA / myM * 90).toStringAsFixed(2) : '0.00';
 
                                   return _AveragesCard(
                                     teamGProm: teamGProm,
@@ -399,6 +442,8 @@ class DashboardPage extends StatelessWidget {
                                     myG: myG,
                                     myA: myA,
                                     myM: myM,
+                                    myGoalsPerMin: myGoalsPerMin,
+                                    myAssistsPerMin: myAssistsPerMin,
                                   );
                                 },
                               ),
@@ -430,12 +475,6 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue[800],
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
                                     icon: const Icon(Icons.group, color: Colors.white),
                                     label: const Text(
                                       "Ver jugadores",
@@ -456,12 +495,6 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green[700],
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
                                     icon: const Icon(Icons.sports_soccer, color: Colors.white),
                                     label: const Text(
                                       "Partidos",
@@ -482,12 +515,6 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.orange[700],
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
                                     icon: const Icon(Icons.person_add, color: Colors.white),
                                     label: const Text(
                                       "Invitar",
@@ -502,12 +529,6 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.purple[700],
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
                                     icon: const Icon(Icons.bar_chart, color: Colors.white),
                                     label: const Text(
                                       "Estadísticas",
@@ -579,7 +600,7 @@ class DashboardPage extends StatelessWidget {
                                   return Card(
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     child: ListTile(
-                                      leading: Icon(Icons.sports_soccer, color: Colors.blue[800]),
+                                      leading: Icon(Icons.sports_soccer, color: Theme.of(context).primaryColor),
                                       title: Text("$teamA vs $teamB", style: const TextStyle(fontWeight: FontWeight.bold)),
                                       subtitle: Text(formattedDate),
                                     ),
@@ -642,6 +663,8 @@ class _AveragesCard extends StatelessWidget {
   final int myG;
   final int myA;
   final int myM;
+  final String myGoalsPerMin;
+  final String myAssistsPerMin;
 
   const _AveragesCard({
     required this.teamGProm,
@@ -650,6 +673,8 @@ class _AveragesCard extends StatelessWidget {
     required this.myG,
     required this.myA,
     required this.myM,
+    required this.myGoalsPerMin,
+    required this.myAssistsPerMin,
   });
 
   @override
@@ -670,19 +695,79 @@ class _AveragesCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      gradient: LinearGradient(colors: [Colors.blue[50]!, Colors.blue[100]!]),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Promedio equipo', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                        const Text('📊 Promedio equipo', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Row(children: [const Icon(Icons.sports, size: 18, color: Colors.blue), const SizedBox(width: 6), Text('Goles/Jug: ${teamGProm.toStringAsFixed(1)}')]),
-                        const SizedBox(height: 6),
-                        Row(children: [const Icon(Icons.group, size: 18, color: Colors.orange), const SizedBox(width: 6), Text('Asist/Jug: ${teamAProm.toStringAsFixed(1)}')]),
-                        const SizedBox(height: 6),
-                        Row(children: [const Icon(Icons.access_time, size: 18, color: Colors.green), const SizedBox(width: 6), Text('Min/Jug: ${teamMProm.toStringAsFixed(0)}')]),
+                        Row(
+                          children: [
+                            const Icon(Icons.sports, size: 20, color: Colors.blue),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Goles / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 26,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(teamGProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.group, size: 20, color: Colors.orange),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Asist / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 26,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(teamAProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 20, color: Colors.green),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Min / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 26,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(teamMProm.toStringAsFixed(0), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -692,19 +777,115 @@ class _AveragesCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      gradient: LinearGradient(colors: [Colors.amber[50]!, Colors.amber[100]!]),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Tus estadísticas', style: TextStyle(color: Colors.black54, fontSize: 12)),
+                        const Text('⭐ Tus estadísticas', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        Row(children: [const Icon(Icons.sports_soccer, size: 18, color: Colors.blue), const SizedBox(width: 6), Text('Goles: $myG')]),
-                        const SizedBox(height: 6),
-                        Row(children: [const Icon(Icons.group, size: 18, color: Colors.orange), const SizedBox(width: 6), Text('Asistencias: $myA')]),
-                        const SizedBox(height: 6),
-                        Row(children: [const Icon(Icons.access_time, size: 18, color: Colors.green), const SizedBox(width: 6), Text('Minutos: $myM')]),
+                        Row(
+                          children: [
+                            const Icon(Icons.sports_soccer, size: 18, color: Colors.blue),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Goles', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 24,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text('$myG', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.group, size: 18, color: Colors.orange),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Asistencias', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 24,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text('$myA', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 18, color: Colors.green),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Minutos', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  height: 24,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text('$myM', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Goles/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    height: 22,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(myGoalsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Asist/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    height: 22,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(myAssistsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),

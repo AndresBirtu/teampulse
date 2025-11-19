@@ -26,10 +26,11 @@ class MatchesPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Gestión de partidos"),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
         onPressed: () {
           Navigator.push(
             context,
@@ -65,16 +66,85 @@ class MatchesPage extends StatelessWidget {
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 2,
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue[50],
-                    child: const Icon(Icons.sports_soccer, color: Colors.blue),
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+                    child: Icon(Icons.sports_soccer, color: Theme.of(context).primaryColor),
                   ),
                   title: Text("$teamA vs $teamB", style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(formattedDate, style: const TextStyle(color: Colors.black54)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(formattedDate, style: const TextStyle(color: Colors.black54)),
+                      const SizedBox(height: 6),
+                      if ((match['played'] ?? false) as bool)
+                        Text('Resultado: ${(match['golesTeamA'] ?? 0).toString()} - ${(match['golesTeamB'] ?? 0).toString()}', style: const TextStyle(color: Colors.black87)),
+                    ],
+                  ),
+                  onTap: () async {
+                    // Abrir diálogo para editar resultado/marcar jugado
+                    final docRef = snapshot.data!.docs[index].reference;
+                    final gA = (match['golesTeamA'] ?? 0).toString();
+                    final gB = (match['golesTeamB'] ?? 0).toString();
+                    bool played = (match['played'] ?? false) as bool;
+                    final TextEditingController aController = TextEditingController(text: gA);
+                    final TextEditingController bController = TextEditingController(text: gB);
+
+                    final result = await showDialog<Map<String, dynamic>>(
+                      context: context,
+                      builder: (ctx) {
+                        return StatefulBuilder(
+                          builder: (ctx2, setState) {
+                            return AlertDialog(
+                              title: const Text('Editar resultado'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SwitchListTile(
+                                    value: played,
+                                    onChanged: (v) => setState(() => played = v),
+                                    title: const Text('Marcado como jugado'),
+                                    activeColor: Theme.of(context).primaryColor,
+                                  ),
+                                  if (played) ...[
+                                    TextField(controller: aController, decoration: const InputDecoration(labelText: 'Goles Equipo A'), keyboardType: TextInputType.number),
+                                    const SizedBox(height: 8),
+                                    TextField(controller: bController, decoration: const InputDecoration(labelText: 'Goles Equipo B'), keyboardType: TextInputType.number),
+                                  ]
+                                ],
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.of(ctx2).pop(null), child: const Text('Cancelar')),
+                                TextButton(
+                                  onPressed: () {
+                                    final Map<String, dynamic> out = {'played': played};
+                                    if (played) {
+                                      out['golesTeamA'] = int.tryParse(aController.text) ?? 0;
+                                      out['golesTeamB'] = int.tryParse(bController.text) ?? 0;
+                                    }
+                                    Navigator.of(ctx2).pop(out);
+                                  },
+                                  child: const Text('Guardar'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+
+                    if (result != null) {
+                      try {
+                        await docRef.update(result);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Resultado actualizado')));
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
+                      }
+                    }
+                    aController.dispose();
+                    bController.dispose();
+                  },
                 ),
               );
             },

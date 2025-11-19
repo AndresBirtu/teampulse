@@ -20,11 +20,13 @@ class EditPlayerPage extends StatefulWidget {
 class _EditPlayerPageState extends State<EditPlayerPage> {
   late TextEditingController golesController;
   late TextEditingController asistenciasController;
-  late TextEditingController posicionController;
   late TextEditingController partidosController;
   late TextEditingController minutosController;
   late TextEditingController amarillasController;
   late TextEditingController rojasController;
+  
+  late String selectedPosicion;
+  late List<String> posiciones;
 
   @override
   void initState() {
@@ -33,8 +35,20 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
         TextEditingController(text: widget.playerData['goles']?.toString() ?? '0');
     asistenciasController =
         TextEditingController(text: widget.playerData['asistencias']?.toString() ?? '0');
-    posicionController =
-        TextEditingController(text: widget.playerData['posicion'] ?? '');
+    
+    // Crear lista base de posiciones
+    posiciones = ['Portero', 'Defensa', 'Centrocampista', 'Delantero', 'Lateral', 'Delantero Centro'];
+    
+    // Obtener la posición guardada, o usar 'Defensa' por defecto
+    String posicionGuardada = widget.playerData['posicion'] ?? 'Defensa';
+    
+    // Si la posición guardada no está en la lista, añadirla (para evitar duplicados)
+    if (!posiciones.contains(posicionGuardada) && posicionGuardada.isNotEmpty) {
+      posiciones.add(posicionGuardada);
+    }
+    
+    selectedPosicion = posicionGuardada;
+    
     partidosController =
         TextEditingController(text: widget.playerData['partidos']?.toString() ?? '0');
     minutosController =
@@ -55,7 +69,7 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
           .set({
         'goles': int.tryParse(golesController.text) ?? 0,
         'asistencias': int.tryParse(asistenciasController.text) ?? 0,
-        'posicion': posicionController.text,
+        'posicion': selectedPosicion,
         'partidos': int.tryParse(partidosController.text) ?? 0,
         'minutos': int.tryParse(minutosController.text) ?? 0,
         'tarjetas_amarillas': int.tryParse(amarillasController.text) ?? 0,
@@ -79,57 +93,46 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Editar jugador: ${widget.playerData['name']}"),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                TextField(
-                  controller: posicionController,
+                DropdownButtonFormField<String>(
+                  value: selectedPosicion,
                   decoration: const InputDecoration(labelText: "Posición", border: OutlineInputBorder()),
+                  items: posiciones.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                  onChanged: (value) => setState(() => selectedPosicion = value ?? 'Defensa'),
                 ),
-            const SizedBox(height: 10),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: partidosController,
-                  decoration: const InputDecoration(labelText: "Partidos jugados", border: OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                ),
-            const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 TextField(
                   controller: minutosController,
                   decoration: const InputDecoration(labelText: "Minutos jugados", border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-            const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 TextField(
                   controller: golesController,
                   decoration: const InputDecoration(labelText: "Goles", border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-            const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 TextField(
                   controller: asistenciasController,
                   decoration: const InputDecoration(labelText: "Asistencias", border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-            const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 TextField(
                   controller: amarillasController,
                   decoration: const InputDecoration(labelText: "Tarjetas amarillas", border: OutlineInputBorder()),
                   keyboardType: TextInputType.number,
                 ),
-            const SizedBox(height: 10),
                 const SizedBox(height: 10),
                 TextField(
                   controller: rojasController,
@@ -141,11 +144,6 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _guardarCambios,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
                     child: const Text("Guardar cambios", style: TextStyle(fontSize: 16)),
                   ),
                 ),

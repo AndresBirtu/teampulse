@@ -13,6 +13,26 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
   final TextEditingController _teamAController = TextEditingController();
   final TextEditingController _teamBController = TextEditingController();
   DateTime? _matchDate;
+  bool _played = false;
+  final TextEditingController _golesAController = TextEditingController(text: '0');
+  final TextEditingController _golesBController = TextEditingController(text: '0');
+
+  String? _teamName;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill team A from teams/{teamId}.name if available
+    FirebaseFirestore.instance.collection('teams').doc(widget.teamId).get().then((doc) {
+      final name = doc.data()?['name'] as String?;
+      if (name != null && name.isNotEmpty) {
+        setState(() {
+          _teamName = name;
+          _teamAController.text = name;
+        });
+      }
+    }).catchError((_) {});
+  }
 
   Future<void> _saveMatch() async {
     if (_teamAController.text.isEmpty ||
@@ -34,6 +54,9 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
         "teamB": _teamBController.text.trim(),
         "date": Timestamp.fromDate(_matchDate!),
         "createdAt": FieldValue.serverTimestamp(),
+              "played": _played,
+              if (_played) "golesTeamA": int.tryParse(_golesAController.text) ?? 0,
+              if (_played) "golesTeamB": int.tryParse(_golesBController.text) ?? 0,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -53,28 +76,60 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Crear partido"),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   children: [
                     TextField(
                       controller: _teamAController,
-                      decoration: const InputDecoration(labelText: "Equipo A", border: OutlineInputBorder()),
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: "Equipo A",
+                        border: const OutlineInputBorder(),
+                        suffixIcon: _teamName == null ? const SizedBox.shrink() : const Icon(Icons.home),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _teamBController,
                       decoration: const InputDecoration(labelText: "Equipo B", border: OutlineInputBorder()),
                     ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      value: _played,
+                      onChanged: (v) => setState(() => _played = v),
+                      title: const Text('Marcado como jugado'),
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Theme.of(context).primaryColor,
+                    ),
+                    if (_played)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _golesAController,
+                              decoration: const InputDecoration(labelText: "Goles Equipo A", border: OutlineInputBorder()),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _golesBController,
+                              decoration: const InputDecoration(labelText: "Goles Equipo B", border: OutlineInputBorder()),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -120,11 +175,6 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _saveMatch,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[800],
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
                 child: const Text("Guardar partido", style: TextStyle(fontSize: 16)),
               ),
             ),

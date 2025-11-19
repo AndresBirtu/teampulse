@@ -18,7 +18,8 @@ class PlayersPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jugadores del equipo"),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: playersStream,
@@ -44,20 +45,16 @@ class PlayersPage extends StatelessWidget {
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                   leading: CircleAvatar(
                     radius: 26,
-                    backgroundColor: Colors.blue[50],
-                    child: Text(initials.toUpperCase(), style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+                    child: Text(initials.toUpperCase(), style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
                   ),
                   title: Text(
                     name,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: Text(
                     "Posición: ${playerData['posicion'] ?? '-'} · Partidos: ${playerData['partidos'] ?? 0}\nGoles: ${playerData['goles'] ?? 0} · Asist: ${playerData['asistencias'] ?? 0}",
@@ -65,7 +62,7 @@ class PlayersPage extends StatelessWidget {
                   ),
                   isThreeLine: true,
                   trailing: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    icon: Icon(Icons.edit, color: Theme.of(context).primaryColor),
                     onPressed: () {
                       Navigator.push(
                         context,

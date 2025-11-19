@@ -21,7 +21,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'CoachUp',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        primaryColor: Colors.teal[700],
+        scaffoldBackgroundColor: Colors.grey[50],
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.teal[700],
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          ),
+        ),
       ),
       home: const HomePage(),
     );

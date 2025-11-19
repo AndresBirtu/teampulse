@@ -11,8 +11,8 @@ class TeamStatsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Estadísticas del equipo"),
-        backgroundColor: Colors.blue[800],
-        elevation: 0,
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 2,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -72,14 +72,14 @@ class TeamStatsPage extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.blue[800]!, Colors.blue[600]!],
+                      colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.85)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
+                        color: Theme.of(context).primaryColor.withOpacity(0.25),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -161,9 +161,9 @@ class TeamStatsPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
+                        color: Colors.green.withOpacity(0.18),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
