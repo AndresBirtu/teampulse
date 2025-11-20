@@ -37,7 +37,7 @@ class MatchesPage extends StatelessWidget {
             MaterialPageRoute(builder: (context) => CreateMatchPage(teamId: teamId)),
           );
         },
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add, color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: matchesStream,

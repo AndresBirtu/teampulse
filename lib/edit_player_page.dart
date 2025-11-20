@@ -89,6 +89,17 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
   }
 
   @override
+  void dispose() {
+    golesController.dispose();
+    asistenciasController.dispose();
+    partidosController.dispose();
+    minutosController.dispose();
+    amarillasController.dispose();
+    rojasController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

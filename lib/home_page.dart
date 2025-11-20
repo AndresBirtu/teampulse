@@ -13,7 +13,7 @@ class HomePage extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.blue[800],
+          backgroundColor: Theme.of(context).primaryColor,
           centerTitle: true,
           title: const Text(
             "TeamPulse",
@@ -24,9 +24,9 @@ class HomePage extends StatelessWidget {
             ),
           ),
           bottom: const TabBar(
-            labelColor: Colors.black,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.blue,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
             tabs: [
               Tab(text: "Iniciar Sesión"),
               Tab(text: "Registrarse"),
@@ -46,7 +46,7 @@ class HomePage extends StatelessWidget {
 
 // ---------------- LOGIN ----------------
 class _LoginTab extends StatefulWidget {
-  const _LoginTab();
+  const _LoginTab({Key? key}) : super(key: key);
 
   @override
   State<_LoginTab> createState() => _LoginTabState();
@@ -58,32 +58,32 @@ class _LoginTabState extends State<_LoginTab> {
   bool _loading = false;
 
   Future<void> _login() async {
+    final email = _correoCtrl.text.trim();
+    final pass = _passCtrl.text.trim();
+    if (email.isEmpty || pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa correo y contraseña')));
+      return;
+    }
+
     setState(() => _loading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _correoCtrl.text.trim(),
-        password: _passCtrl.text.trim(),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Inicio de sesión exitoso")),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardPage()),
-      );
+      await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
+      if (!mounted) return;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
     } on FirebaseAuthException catch (e) {
-      String msg = "Error al iniciar sesión";
-      if (e.code == "user-not-found") msg = "Usuario no encontrado";
-      if (e.code == "wrong-password") msg = "Contraseña incorrecta";
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Error al iniciar sesión')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _correoCtrl.dispose();
+    _passCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -91,54 +91,53 @@ class _LoginTabState extends State<_LoginTab> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Center(child: Image.asset("assets/logo.png", height: 150)),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _correoCtrl,
-              decoration: InputDecoration(
-                labelText: "Correo",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _passCtrl,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Contraseña",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _login,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[800],
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Center(child: Image.asset("assets/logo.png", height: 150)),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: _correoCtrl,
+                  decoration: InputDecoration(
+                    labelText: "Correo",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Iniciar", style: TextStyle(fontSize: 18, color: Colors.white)),
-              ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _passCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Contraseña",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _login,
+                    child: _loading
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Iniciar", style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RecuperarContrasenaPage()));
+                  },
+                  child: Text(
+                    "¿Olvidaste tu contraseña?",
+                    style: TextStyle(color: Theme.of(context).primaryColor, decoration: TextDecoration.underline),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const RecuperarContrasenaPage()),
-                );
-              },
-              child: const Text(
-                "¿Olvidaste tu contraseña?",
-                style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -147,7 +146,7 @@ class _LoginTabState extends State<_LoginTab> {
 
 // ---------------- REGISTRO ----------------
 class _RegisterTab extends StatefulWidget {
-  const _RegisterTab();
+  const _RegisterTab({Key? key}) : super(key: key);
 
   @override
   State<_RegisterTab> createState() => _RegisterTabState();
@@ -224,10 +223,7 @@ class _RegisterTabState extends State<_RegisterTab> {
           "teamCode": teamCode,
         }, SetOptions(merge: true));
       } else if (_rol == "jugador") {
-        final teamSnap = await db.collection("teams")
-            .where("teamCode", isEqualTo: _codigoEquipoController.text.trim())
-            .limit(1)
-            .get();
+        final teamSnap = await db.collection("teams").where("teamCode", isEqualTo: _codigoEquipoController.text.trim()).limit(1).get();
 
         if (teamSnap.docs.isEmpty) {
           throw Exception("El código de equipo no existe");
@@ -250,20 +246,14 @@ class _RegisterTabState extends State<_RegisterTab> {
         }, SetOptions(merge: true));
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registro exitoso")),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Registro exitoso")));
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DashboardPage()),
-      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardPage()));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}"), backgroundColor: Colors.red));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -282,83 +272,84 @@ class _RegisterTabState extends State<_RegisterTab> {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            const Text("Crear una cuenta", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _nombreController,
-              decoration: InputDecoration(
-                labelText: "Nombre",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _correoController,
-              decoration: InputDecoration(
-                labelText: "Correo",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _contrasenaController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Contraseña",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              value: _rol,
-              decoration: InputDecoration(
-                labelText: "Rol",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              items: const [
-                DropdownMenuItem(value: "jugador", child: Text("Jugador")),
-                DropdownMenuItem(value: "entrenador", child: Text("Entrenador")),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                const Text("Crear una cuenta", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 18),
+                TextField(
+                  controller: _nombreController,
+                  decoration: InputDecoration(
+                    labelText: "Nombre",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _correoController,
+                  decoration: InputDecoration(
+                    labelText: "Correo",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _contrasenaController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Contraseña",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: _rol,
+                  decoration: InputDecoration(
+                    labelText: "Rol",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: "jugador", child: Text("Jugador")),
+                    DropdownMenuItem(value: "entrenador", child: Text("Entrenador")),
+                  ],
+                  onChanged: (value) => setState(() => _rol = value),
+                ),
+                if (_rol == "jugador") ...[
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _codigoEquipoController,
+                    decoration: InputDecoration(
+                      labelText: "Código de equipo",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+                if (_rol == "entrenador") ...[
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _nombreEquipoController,
+                    decoration: InputDecoration(
+                      labelText: "Nombre del equipo",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _registrar,
+                    child: _loading
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Registrar", style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
+                ),
               ],
-              onChanged: (value) => setState(() => _rol = value),
             ),
-            if (_rol == "jugador") ...[
-              const SizedBox(height: 20),
-              TextField(
-                controller: _codigoEquipoController,
-                decoration: InputDecoration(
-                  labelText: "Código de equipo",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-            if (_rol == "entrenador") ...[
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nombreEquipoController,
-                decoration: InputDecoration(
-                  labelText: "Nombre del equipo",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _registrar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[800],
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Registrar", style: TextStyle(fontSize: 18, color: Colors.white)),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

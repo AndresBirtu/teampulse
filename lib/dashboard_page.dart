@@ -7,6 +7,8 @@ import 'match_page.dart';
 import 'players_page.dart';
 import 'full_stats_page.dart';
 import 'team_stats_page.dart';
+import 'trainings_page.dart';
+import 'player_profile_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -170,6 +172,40 @@ class DashboardPage extends StatelessWidget {
         backgroundColor: Theme.of(context).primaryColor,
         actions: [
           IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              final playerId = uid;
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text("Mi perfil"),
+                  content: const Text("¿Deseas ver tu perfil y editar tu foto?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text("Cancelar"),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(ctx).pop();
+                        final teamId = await FirebaseFirestore.instance.collection('users').doc(playerId).get().then((doc) => doc['teamId']);
+                        if (teamId != null && context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PlayerProfilePage(teamId: teamId, playerId: playerId),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text("Ver perfil"),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               showDialog(
@@ -229,13 +265,13 @@ class DashboardPage extends StatelessWidget {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 28,
                           backgroundColor: Colors.white,
                           child: Icon(
                             Icons.person,
                             size: 32,
-                            color: Colors.blue,
+                            color: Theme.of(context).primaryColor,
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -529,6 +565,23 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.fitness_center, color: Colors.white),
+                                    label: const Text(
+                                      "Entrenamientos",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => TrainingsPage(teamId: teamId)),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
                                     icon: const Icon(Icons.bar_chart, color: Colors.white),
                                     label: const Text(
                                       "Estadísticas",
@@ -636,19 +689,26 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            Icon(icon, size: 32, color: color),
+            Container(
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(10),
+              child: Icon(icon, size: 24, color: color),
+            ),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
-            Text(label),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
           ],
         ),
       ),
