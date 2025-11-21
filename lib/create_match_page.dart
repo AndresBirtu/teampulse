@@ -45,7 +45,8 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
     }
 
     try {
-      await FirebaseFirestore.instance
+      // Crear el documento del partido y obtener la referencia
+      final matchRef = await FirebaseFirestore.instance
           .collection("teams")
           .doc(widget.teamId)
           .collection("matches")
@@ -54,20 +55,67 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
         "teamB": _teamBController.text.trim(),
         "date": Timestamp.fromDate(_matchDate!),
         "createdAt": FieldValue.serverTimestamp(),
-              "played": _played,
-              if (_played) "golesTeamA": int.tryParse(_golesAController.text) ?? 0,
-              if (_played) "golesTeamB": int.tryParse(_golesBController.text) ?? 0,
+        "played": _played,
+        if (_played) "golesTeamA": int.tryParse(_golesAController.text) ?? 0,
+        if (_played) "golesTeamB": int.tryParse(_golesBController.text) ?? 0,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Partido guardado correctamente")),
-      );
+      // Generar automáticamente la hoja de stats (un doc por jugador en matches/{matchId}/stats/{playerId})
+      try {
+        final teamDoc = await FirebaseFirestore.instance.collection('teams').doc(widget.teamId).get();
+        final teamCoachId = teamDoc.data()?['coachId'] as String?;
 
-      Navigator.pop(context);
+        final playersSnap = await FirebaseFirestore.instance
+            .collection('teams')
+            .doc(widget.teamId)
+            .collection('players')
+            .get();
+
+        if (playersSnap.docs.isNotEmpty) {
+          final batch = FirebaseFirestore.instance.batch();
+          for (final p in playersSnap.docs) {
+            final playerData = p.data() as Map<String, dynamic>;
+            final statRef = matchRef.collection('stats').doc(p.id);
+            // Determinar si es entrenador: mirar 'role' o comparar con team.coachId
+            final role = playerData['role'] as String?;
+            final bool isCoach = (role != null && role.toLowerCase() == 'coach') || (teamCoachId != null && teamCoachId == p.id);
+            batch.set(statRef, {
+              'playerId': p.id,
+              'playerName': playerData['name'] ?? '',
+              'minutos': 0,
+              'goles': 0,
+              'asistencias': 0,
+              'amarillas': 0,
+              'rojas': 0,
+              'titular': false,
+              // marcar como convocado por defecto y propagar si es entrenador
+              'convocado': true,
+              'isCoach': isCoach,
+            });
+          }
+          await batch.commit();
+        }
+      } catch (e) {
+        // No bloqueamos la creación del partido si falla la hoja de stats,
+        // pero avisamos al usuario para que lo revise.
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Partido guardado, pero fallo al generar hoja de stats: $e')));
+        }
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Partido guardado correctamente")),
+        );
+
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al guardar: $e")),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error al guardar: $e")),
+        );
+      }
     }
   }
 

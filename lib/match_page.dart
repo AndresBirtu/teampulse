@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'create_match_page.dart';
+import 'match_stats_editor.dart';
 
 class MatchesPage extends StatelessWidget {
   final String teamId;
@@ -136,8 +137,46 @@ class MatchesPage extends StatelessWidget {
 
                     if (result != null) {
                       try {
+                        // Actualizar el documento del partido
                         await docRef.update(result);
+
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Resultado actualizado')));
+
+                        // Si marcó como jugado, aplicar agregación de stats a players (una sola vez)
+                        final previouslyAggregated = (match['aggregated'] ?? false) as bool;
+                        final nowPlayed = (result['played'] ?? false) as bool;
+                        if (nowPlayed && !previouslyAggregated) {
+                          try {
+                            final statsSnap = await docRef.collection('stats').get();
+                            final batch = FirebaseFirestore.instance.batch();
+                            for (final s in statsSnap.docs) {
+                              final sd = s.data() as Map<String, dynamic>;
+                              final pid = s.id;
+                              final goles = (sd['goles'] ?? 0) as int;
+                              final asist = (sd['asistencias'] ?? 0) as int;
+                              final minutos = (sd['minutos'] ?? 0) as int;
+                              final amar = (sd['amarillas'] ?? 0) as int;
+                              final roj = (sd['rojas'] ?? 0) as int;
+                              final convocado = (sd['convocado'] ?? true) as bool;
+                              if (!convocado) continue;
+
+                              final playerRef = FirebaseFirestore.instance.collection('teams').doc(teamId).collection('players').doc(pid);
+                              batch.set(playerRef, {
+                                'goles': FieldValue.increment(goles),
+                                'asistencias': FieldValue.increment(asist),
+                                'minutos': FieldValue.increment(minutos),
+                                'partidos': FieldValue.increment((minutos > 0) ? 1 : 0),
+                                'tarjetas_amarillas': FieldValue.increment(amar),
+                                'tarjetas_rojas': FieldValue.increment(roj),
+                              }, SetOptions(merge: true));
+                            }
+                            await batch.commit();
+                            // Marcar partido como agregado
+                            await docRef.update({'aggregated': true});
+                          } catch (e) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error aplicando agregados: $e')));
+                          }
+                        }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
                       }
@@ -145,6 +184,89 @@ class MatchesPage extends StatelessWidget {
                     aController.dispose();
                     bController.dispose();
                   },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.stacked_bar_chart),
+                        onPressed: () {
+                          final matchId = snapshot.data!.docs[index].id;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MatchStatsEditor(teamId: teamId, matchId: matchId),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                        onPressed: () async {
+                          final matchRef = snapshot.data!.docs[index].reference;
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Eliminar partido'),
+                              content: const Text('¿Eliminar este partido del historial? Esta acción puede revertir estadísticas agregadas.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+                              ],
+                            ),
+                          );
+                          if (confirm != true) return;
+
+                          try {
+                            final matchData = (snapshot.data!.docs[index].data() as Map<String, dynamic>);
+                            final aggregated = (matchData['aggregated'] ?? false) as bool;
+
+                            if (aggregated) {
+                              final statsSnap = await matchRef.collection('stats').get();
+                              final batch = FirebaseFirestore.instance.batch();
+                              for (final s in statsSnap.docs) {
+                                final sd = s.data();
+                                final pid = s.id;
+                                final goles = (sd['goles'] ?? 0) as int;
+                                final asist = (sd['asistencias'] ?? 0) as int;
+                                final minutos = (sd['minutos'] ?? 0) as int;
+                                final amar = (sd['amarillas'] ?? 0) as int;
+                                final roj = (sd['rojas'] ?? 0) as int;
+                                final convocado = (sd['convocado'] ?? true) as bool;
+                                if (!convocado) continue;
+
+                                final playerRef = FirebaseFirestore.instance.collection('teams').doc(teamId).collection('players').doc(pid);
+                                batch.set(playerRef, {
+                                  'goles': FieldValue.increment(-goles),
+                                  'asistencias': FieldValue.increment(-asist),
+                                  'minutos': FieldValue.increment(-minutos),
+                                  'partidos': FieldValue.increment(- (minutos > 0 ? 1 : 0)),
+                                  'tarjetas_amarillas': FieldValue.increment(-amar),
+                                  'tarjetas_rojas': FieldValue.increment(-roj),
+                                }, SetOptions(merge: true));
+                              }
+                              await batch.commit();
+                            }
+
+                            final statsToDelete = await matchRef.collection('stats').get();
+                            final batchDel = FirebaseFirestore.instance.batch();
+                            for (final s in statsToDelete.docs) {
+                              batchDel.delete(s.reference);
+                            }
+                            await batchDel.commit();
+                            await matchRef.delete();
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Partido eliminado')));
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error eliminando: $e')));
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

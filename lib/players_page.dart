@@ -67,7 +67,6 @@ class _PlayersPageState extends State<PlayersPage> {
           if (players.isEmpty) {
             return const Center(child: Text("No hay jugadores en el equipo"));
           }
-
           return Column(
             children: [
               // Controles de filtro y orden
@@ -132,7 +131,6 @@ class _PlayersPageState extends State<PlayersPage> {
                     final name = playerData['name'] ?? 'Jugador sin nombre';
                     final photoUrl = playerData['photoUrl'] ?? '';
                     final initials = name.split(' ').map((s) => s.isNotEmpty ? s[0] : '').take(2).join();
-
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 2,
