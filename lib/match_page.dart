@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'create_match_page.dart';
 import 'match_stats_editor.dart';
+import 'match_availability_page.dart';
 
 class MatchesPage extends StatelessWidget {
   final String teamId;
@@ -188,7 +190,37 @@ class MatchesPage extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        icon: const Icon(Icons.people),
+                        tooltip: 'Convocatorias y disponibilidad',
+                        onPressed: () async {
+                          final matchId = snapshot.data!.docs[index].id;
+                          // Determinar si el usuario actual es coach
+                          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                          bool isCoach = false;
+                          if (currentUserId != null) {
+                            try {
+                              final teamDoc = await FirebaseFirestore.instance.collection('teams').doc(teamId).get();
+                              final coachId = teamDoc.data()?['coachId'] as String?;
+                              isCoach = (coachId == currentUserId);
+                            } catch (_) {}
+                          }
+                          if (context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => MatchAvailabilityPage(
+                                  teamId: teamId,
+                                  matchId: matchId,
+                                  isCoach: isCoach,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.stacked_bar_chart),
+                        tooltip: 'Estadísticas',
                         onPressed: () {
                           final matchId = snapshot.data!.docs[index].id;
                           Navigator.push(
@@ -201,6 +233,7 @@ class MatchesPage extends StatelessWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                        tooltip: 'Eliminar partido',
                         onPressed: () async {
                           final matchRef = snapshot.data!.docs[index].reference;
                           final confirm = await showDialog<bool>(

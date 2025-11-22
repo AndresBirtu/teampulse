@@ -56,6 +56,7 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
         "date": Timestamp.fromDate(_matchDate!),
         "createdAt": FieldValue.serverTimestamp(),
         "played": _played,
+        "convocados": [], // Lista vacía de convocados, el entrenador los añadirá
         if (_played) "golesTeamA": int.tryParse(_golesAController.text) ?? 0,
         if (_played) "golesTeamB": int.tryParse(_golesBController.text) ?? 0,
       });
@@ -76,9 +77,12 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
           for (final p in playersSnap.docs) {
             final playerData = p.data() as Map<String, dynamic>;
             final statRef = matchRef.collection('stats').doc(p.id);
-            // Determinar si es entrenador: mirar 'role' o comparar con team.coachId
+            // Determinar si es entrenador: mirar 'role', 'isCoach' flag, o comparar con team.coachId
             final role = playerData['role'] as String?;
-            final bool isCoach = (role != null && role.toLowerCase() == 'coach') || (teamCoachId != null && teamCoachId == p.id);
+            final isCoachFlag = playerData['isCoach'] as bool? ?? false;
+            final bool isCoach = isCoachFlag || 
+                                 (role != null && (role.toLowerCase() == 'coach' || role.toLowerCase() == 'entrenador')) || 
+                                 (teamCoachId != null && teamCoachId == p.id);
             batch.set(statRef, {
               'playerId': p.id,
               'playerName': playerData['name'] ?? '',

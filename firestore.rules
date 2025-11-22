@@ -2,46 +2,110 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // === Colección de usuarios ===
+    // ----------------- users -----------------
     match /users/{userId} {
-      // Cada usuario solo puede leer y editar su propio perfil
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Crear al registrarse
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Leer y modificar solo lo suyo
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // === Equipos y subcolecciones ===
+    // ----------------- teams -----------------
     match /teams/{teamId} {
-      
-      // Todos los usuarios autenticados pueden leer información básica del equipo
+
+      // Cualquiera autenticado puede leer info del equipo
       allow read: if request.auth != null;
-      
-      // Solo los entrenadores pueden crear o modificar la información general del equipo
-      allow write: if request.auth != null &&
-                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
 
-      // === Jugadores dentro de un equipo ===
+      // Crear equipo → ownerId debe ser UID del entrenador
+      allow create: if request.auth != null &&
+        request.resource.data.ownerId == request.auth.uid;
+
+      // Actualizar / borrar equipo → solo owner
+      allow update, delete: if request.auth != null &&
+        get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId == request.auth.uid;
+
+
+      // -------- players --------
       match /players/{playerId} {
-        
-        // Los entrenadores pueden leer y modificar todos los jugadores
-        allow read, write: if request.auth != null &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
 
-        // Los jugadores pueden LEER toda la colección de jugadores (para ver promedios del equipo)
+        // Leer: jugadores y entrenadores del equipo
         allow read: if request.auth != null &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "jugador" &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == request.resource.ref.parent.parent.id;
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
 
-        // Los jugadores **no pueden escribir** sus propios datos
-        allow write: if false;
+        // Crear:
+        // - Entrenador del equipo crea jugadores
+        // - Jugador crea su doc cuando entra al equipo
+        allow create: if request.auth != null && (
+            (
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId
+            ) ||
+            (
+              request.auth.uid == playerId &&
+              request.resource.data.role == "jugador" &&
+              request.resource.data.teamId == teamId
+            )
+        );
+
+        // Actualizar / eliminar → solo entrenador del equipo
+        allow update, delete: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
       }
 
-      // === Partidos de un equipo ===
-      match /matches/{matchId} {
-        // Todos los usuarios autenticados pueden leer los partidos
-        allow read: if request.auth != null;
 
-        // Solo los entrenadores pueden crear, editar o borrar partidos
+      // -------- matches --------
+      match /matches/{matchId} {
+
+        // Leer → todos los miembros del equipo
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+        // Crear / editar / borrar → solo entrenador del equipo
         allow write: if request.auth != null &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador";
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+
+        // -------- ESTADÍSTICAS POR PARTIDO --------
+        match /stats/{statId} {
+
+          // Leer → jugadores/entrenador del equipo
+          allow read: if request.auth != null &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+          // Crear / actualizar / borrar → solo entrenador
+          allow create, update, delete: if request.auth != null &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+        }
+
+        // -------- DISPONIBILIDAD DE JUGADORES --------
+        match /availability/{playerId} {
+
+          // Leer → todos los miembros del equipo pueden ver disponibilidades
+          allow read: if request.auth != null &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+          // Escribir → cada jugador solo puede escribir su propia disponibilidad
+          allow create, update, delete: if request.auth != null &&
+            request.auth.uid == playerId &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+        }
+      }
+
+      // -------- trainings (entrenamientos) --------
+      match /trainings/{trainingId} {
+
+        // Leer → todos los miembros del equipo
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+        // Crear / editar / borrar → solo entrenador del equipo
+        allow write: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
       }
     }
   }

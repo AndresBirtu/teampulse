@@ -9,6 +9,8 @@ import 'full_stats_page.dart';
 import 'team_stats_page.dart';
 import 'trainings_page.dart';
 import 'player_profile_page.dart';
+import 'match_availability_page.dart';
+import 'calendar_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -582,6 +584,26 @@ class DashboardPage extends StatelessWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.calendar_month, color: Colors.white),
+                                    label: const Text(
+                                      "Calendario",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              CalendarPage(teamId: teamId),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
                                     icon: const Icon(Icons.bar_chart, color: Colors.white),
                                     label: const Text(
                                       "Estadísticas",
@@ -646,6 +668,10 @@ class DashboardPage extends StatelessWidget {
                                       matchData["teamB"] ?? "Desconocido";
                                   final date = (matchData["date"] as Timestamp)
                                       .toDate();
+                                  final matchId = matchDoc.id;
+                                  final convocados = List<String>.from(matchData['convocados'] ?? []);
+                                  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                                  final isConvocado = currentUserId != null && convocados.contains(currentUserId);
 
                                   final formattedDate =
                                       "${date.day}/${date.month}/${date.year} - ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
@@ -655,7 +681,67 @@ class DashboardPage extends StatelessWidget {
                                     child: ListTile(
                                       leading: Icon(Icons.sports_soccer, color: Theme.of(context).primaryColor),
                                       title: Text("$teamA vs $teamB", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      subtitle: Text(formattedDate),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(formattedDate),
+                                          if (isConvocado)
+                                            const Row(
+                                              children: [
+                                                Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                                SizedBox(width: 4),
+                                                Text('Convocado', style: TextStyle(color: Colors.green, fontSize: 12)),
+                                              ],
+                                            ),
+                                          StreamBuilder<DocumentSnapshot>(
+                                            stream: FirebaseFirestore.instance
+                                                .collection('teams')
+                                                .doc(teamId)
+                                                .collection('matches')
+                                                .doc(matchId)
+                                                .collection('availability')
+                                                .doc(currentUserId)
+                                                .snapshots(),
+                                            builder: (context, availSnap) {
+                                              final availData = availSnap.data?.data() as Map<String, dynamic>?;
+                                              final status = availData?['status'] as String?;
+                                              if (status == null) {
+                                                return const Row(
+                                                  children: [
+                                                    Icon(Icons.help_outline, size: 14, color: Colors.orange),
+                                                    SizedBox(width: 4),
+                                                    Text('¿Vienes? Indica tu disponibilidad', style: TextStyle(color: Colors.orange, fontSize: 12)),
+                                                  ],
+                                                );
+                                              }
+                                              return const SizedBox.shrink();
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      onTap: () async {
+                                        // Determinar si es coach
+                                        bool isCoach = false;
+                                        if (currentUserId != null) {
+                                          try {
+                                            final teamDoc = await FirebaseFirestore.instance.collection('teams').doc(teamId).get();
+                                            final coachId = teamDoc.data()?['coachId'] as String?;
+                                            isCoach = (coachId == currentUserId);
+                                          } catch (_) {}
+                                        }
+                                        if (context.mounted) {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => MatchAvailabilityPage(
+                                                teamId: teamId!,
+                                                matchId: matchId,
+                                                isCoach: isCoach,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
                                     ),
                                   );
                                 }).toList(),

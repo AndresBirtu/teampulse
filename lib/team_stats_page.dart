@@ -47,7 +47,7 @@ class TeamStatsPage extends StatelessWidget {
             final data = player.data() as Map<String, dynamic>;
             // Excluir entrenadores del cálculo
             final role = (data['role'] as String?) ?? '';
-            if (role.toLowerCase() == 'entrenador') continue;
+            if (role.toLowerCase() == 'entrenador' || role.toLowerCase() == 'coach') continue;
 
             totalGoles += (data['goles'] as int?) ?? 0;
             totalAsistencias += (data['asistencias'] as int?) ?? 0;
@@ -214,7 +214,12 @@ class TeamStatsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...players.map((playerDoc) {
+                ...players.where((playerDoc) {
+                  final playerData = playerDoc.data() as Map<String, dynamic>;
+                  final role = (playerData['role'] as String?) ?? '';
+                  // Excluir entrenadores de la lista
+                  return role.toLowerCase() != 'entrenador' && role.toLowerCase() != 'coach';
+                }).map((playerDoc) {
                   final playerData = playerDoc.data() as Map<String, dynamic>;
                   return _PlayerStatCard(
                     name: playerData['name'] ?? "Jugador desconocido",
