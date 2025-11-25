@@ -11,9 +11,16 @@ import 'trainings_page.dart';
 import 'player_profile_page.dart';
 import 'match_availability_page.dart';
 import 'calendar_page.dart';
+import 'theme/app_colors.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
   
   void _showMatchStatsDialog(BuildContext context, String title, int count) {
     showDialog(
@@ -170,8 +177,16 @@ class DashboardPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Dashboard"),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text(
+          "Dashboard",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.primaryGradient,
+          ),
+        ),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -252,11 +267,13 @@ class DashboardPage extends StatelessWidget {
           final role = userData["role"] ?? "jugador";
           final teamId = userData["teamId"] ?? "";
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
@@ -333,31 +350,39 @@ class DashboardPage extends StatelessWidget {
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  GestureDetector(
-                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Jugados', played),
-                                    child: _StatCard(
-                                      icon: Icons.sports_soccer,
-                                      label: "Jugados",
-                                      value: played.toString(),
-                                      color: Colors.orange,
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Jugados', played),
+                                      child: _StatCard(
+                                        icon: Icons.sports_soccer,
+                                        label: "Jugados",
+                                        value: played.toString(),
+                                        color: Colors.orange,
+                                      ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Ganados', won),
-                                    child: _StatCard(
-                                      icon: Icons.emoji_events,
-                                      label: "Ganados",
-                                      value: won.toString(),
-                                      color: Colors.green,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Ganados', won),
+                                      child: _StatCard(
+                                        icon: Icons.emoji_events,
+                                        label: "Ganados",
+                                        value: won.toString(),
+                                        color: Colors.green,
+                                      ),
                                     ),
                                   ),
-                                  GestureDetector(
-                                    onTap: () => _showMatchStatsDialog(context, 'Partidos Perdidos', lost),
-                                    child: _StatCard(
-                                      icon: Icons.cancel,
-                                      label: "Perdidos",
-                                      value: lost.toString(),
-                                      color: Colors.red,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Perdidos', lost),
+                                      child: _StatCard(
+                                        icon: Icons.cancel,
+                                        label: "Perdidos",
+                                        value: lost.toString(),
+                                        color: Colors.red,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -393,32 +418,6 @@ class DashboardPage extends StatelessWidget {
                         if (role == "jugador")
                           Column(
                             children: [
-                                  Padding(
-                                padding: const EdgeInsets.only(top: 12),
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(
-                                    Icons.bar_chart,
-                                    color: Colors.white,
-                                  ),
-                                  label: const Text(
-                                    "Ver estadísticas completas",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => FullStatsPage(
-                                          teamId: teamId,
-                                          playerId: uid,
-                                          playerName: userData["name"] ?? "Jugador",
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-
                               const SizedBox(height: 12),
 
                               // Mostrar promedios de equipo (excluyendo entrenador) y estadísticas propias
@@ -473,15 +472,238 @@ class DashboardPage extends StatelessWidget {
                                   final myGoalsPerMin = myM > 0 ? (myG / myM * 90).toStringAsFixed(2) : '0.00';
                                   final myAssistsPerMin = myM > 0 ? (myA / myM * 90).toStringAsFixed(2) : '0.00';
 
-                                  return _AveragesCard(
-                                    teamGProm: teamGProm,
-                                    teamAProm: teamAProm,
-                                    teamMProm: teamMProm,
-                                    myG: myG,
-                                    myA: myA,
-                                    myM: myM,
-                                    myGoalsPerMin: myGoalsPerMin,
-                                    myAssistsPerMin: myAssistsPerMin,
+                                  return Card(
+                                    elevation: 3,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Promedios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(colors: [Colors.blue[50]!, Colors.blue[100]!]),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      const Text('📊 Promedio equipo', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.sports, size: 20, color: Colors.blue),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Goles / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 26,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text(teamGProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.group, size: 20, color: Colors.orange),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Asist / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 26,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text(teamAProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.access_time, size: 20, color: Colors.green),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Min / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 26,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text(teamMProm.toStringAsFixed(0), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(colors: [Colors.amber[50]!, Colors.amber[100]!]),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      const Text('⭐ Tus estadísticas', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.sports_soccer, size: 18, color: Colors.blue),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Goles', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 24,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text('$myG', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.group, size: 18, color: Colors.orange),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Asistencias', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 24,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text('$myA', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          const Icon(Icons.access_time, size: 18, color: Colors.green),
+                                                          const SizedBox(width: 10),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Minutos', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 24,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text('$myM', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 12),
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Goles/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 22,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text(myGoalsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          const SizedBox(width: 16),
+                                                          Expanded(
+                                                            child: Column(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                const Text('Asist/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                const SizedBox(height: 4),
+                                                                SizedBox(
+                                                                  height: 22,
+                                                                  child: FittedBox(
+                                                                    fit: BoxFit.scaleDown,
+                                                                    alignment: Alignment.centerLeft,
+                                                                    child: Text(myAssistsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   );
                                 },
                               ),
@@ -497,12 +719,26 @@ class DashboardPage extends StatelessWidget {
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Gestión del equipo",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.primaryGradient,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                "Gestión del equipo",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 10),
                           SizedBox(
@@ -512,112 +748,238 @@ class DashboardPage extends StatelessWidget {
                               children: [
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.group, color: Colors.white),
-                                    label: const Text(
-                                      "Ver jugadores",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              PlayersPage(teamId: teamId),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.primaryGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.sports_soccer, color: Colors.white),
-                                    label: const Text(
-                                      "Partidos",
-                                      style: TextStyle(color: Colors.white),
+                                      ],
                                     ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              MatchesPage(teamId: teamId),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                      );
-                                    },
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.group, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Ver jugadores",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                PlayersPage(teamId: teamId),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.person_add, color: Colors.white),
-                                    label: const Text(
-                                      "Invitar",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onPressed: () {
-                                      _showInviteDialog(context, teamId);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.fitness_center, color: Colors.white),
-                                    label: const Text(
-                                      "Entrenamientos",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => TrainingsPage(teamId: teamId)),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.calendar_month, color: Colors.white),
-                                    label: const Text(
-                                      "Calendario",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CalendarPage(teamId: teamId),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.primaryGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
                                         ),
-                                      );
-                                    },
+                                      ],
+                                    ),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Partidos",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                MatchesPage(teamId: teamId),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    icon: const Icon(Icons.bar_chart, color: Colors.white),
-                                    label: const Text(
-                                      "Estadísticas",
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              TeamStatsPage(teamId: teamId),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.trainingGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.accent.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
                                         ),
-                                      );
-                                    },
+                                      ],
+                                    ),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.person_add, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Invitar",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        _showInviteDialog(context, teamId);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.trainingGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.trainingColor.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.fitness_center, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Entrenamientos",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => TrainingsPage(teamId: teamId)),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.primaryGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.calendar_month, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Calendario",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                CalendarPage(teamId: teamId),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.primaryGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                      ),
+                                      icon: const Icon(Icons.bar_chart, color: Colors.white, size: 24),
+                                      label: const Text(
+                                        "Estadísticas",
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                TeamStatsPage(teamId: teamId),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ],
@@ -628,12 +990,26 @@ class DashboardPage extends StatelessWidget {
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Próximos partidos",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.matchGradient,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.sports_soccer, color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                "Próximos partidos",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 10),
                           StreamBuilder<QuerySnapshot>(
@@ -678,47 +1054,8 @@ class DashboardPage extends StatelessWidget {
 
                                   return Card(
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    child: ListTile(
-                                      leading: Icon(Icons.sports_soccer, color: Theme.of(context).primaryColor),
-                                      title: Text("$teamA vs $teamB", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      subtitle: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(formattedDate),
-                                          if (isConvocado)
-                                            const Row(
-                                              children: [
-                                                Icon(Icons.check_circle, size: 14, color: Colors.green),
-                                                SizedBox(width: 4),
-                                                Text('Convocado', style: TextStyle(color: Colors.green, fontSize: 12)),
-                                              ],
-                                            ),
-                                          StreamBuilder<DocumentSnapshot>(
-                                            stream: FirebaseFirestore.instance
-                                                .collection('teams')
-                                                .doc(teamId)
-                                                .collection('matches')
-                                                .doc(matchId)
-                                                .collection('availability')
-                                                .doc(currentUserId)
-                                                .snapshots(),
-                                            builder: (context, availSnap) {
-                                              final availData = availSnap.data?.data() as Map<String, dynamic>?;
-                                              final status = availData?['status'] as String?;
-                                              if (status == null) {
-                                                return const Row(
-                                                  children: [
-                                                    Icon(Icons.help_outline, size: 14, color: Colors.orange),
-                                                    SizedBox(width: 4),
-                                                    Text('¿Vienes? Indica tu disponibilidad', style: TextStyle(color: Colors.orange, fontSize: 12)),
-                                                  ],
-                                                );
-                                              }
-                                              return const SizedBox.shrink();
-                                            },
-                                          ),
-                                        ],
-                                      ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
                                       onTap: () async {
                                         // Determinar si es coach
                                         bool isCoach = false;
@@ -742,6 +1079,89 @@ class DashboardPage extends StatelessWidget {
                                           );
                                         }
                                       },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.sports_soccer, color: Theme.of(context).primaryColor, size: 40),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    "$teamA vs $teamB",
+                                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    formattedDate,
+                                                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  if (matchData['played'] == true)
+                                                    Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.emoji_events, size: 14, color: Colors.blue),
+                                                        const SizedBox(width: 4),
+                                                        Flexible(
+                                                          child: Text(
+                                                            'Resultado: ${matchData['golesTeamA'] ?? 0} - ${matchData['golesTeamB'] ?? 0}',
+                                                            style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  if (isConvocado && matchData['played'] != true)
+                                                    Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                                                        const SizedBox(width: 4),
+                                                        const Text('Convocado', style: TextStyle(color: Colors.green, fontSize: 12)),
+                                                      ],
+                                                    ),
+                                                  StreamBuilder<DocumentSnapshot>(
+                                                    stream: FirebaseFirestore.instance
+                                                        .collection('teams')
+                                                        .doc(teamId)
+                                                        .collection('matches')
+                                                        .doc(matchId)
+                                                        .collection('availability')
+                                                        .doc(currentUserId)
+                                                        .snapshots(),
+                                                    builder: (context, availSnap) {
+                                                      final availData = availSnap.data?.data() as Map<String, dynamic>?;
+                                                      final status = availData?['status'] as String?;
+                                                      if (status == null) {
+                                                        return Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            const Icon(Icons.help_outline, size: 14, color: Colors.orange),
+                                                            const SizedBox(width: 4),
+                                                            const Flexible(
+                                                              child: Text(
+                                                                '¿Vienes? Indica disponibilidad',
+                                                                style: TextStyle(color: Colors.orange, fontSize: 12),
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        );
+                                                      }
+                                                      return const SizedBox.shrink();
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   );
                                 }).toList(),
@@ -752,8 +1172,124 @@ class DashboardPage extends StatelessWidget {
                       ),
               ],
             ),
+          ),
+          bottomNavigationBar: role == "jugador"
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildNavItem(
+                            context,
+                            icon: Icons.home,
+                            label: 'Inicio',
+                            color: AppColors.primary,
+                            onTap: () {},
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.calendar_month,
+                            label: 'Calendario',
+                            color: AppColors.secondary,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CalendarPage(teamId: teamId),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.sports_soccer,
+                            label: 'Partidos',
+                            color: AppColors.primary,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MatchesPage(teamId: teamId),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.bar_chart,
+                            label: 'Stats',
+                            color: AppColors.accent,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FullStatsPage(
+                                    teamId: teamId,
+                                    playerId: FirebaseAuth.instance.currentUser!.uid,
+                                    playerName: userData["name"] ?? "Jugador",
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              : null,
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -775,270 +1311,51 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(10),
-              child: Icon(icon, size: 24, color: color),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-          ],
+      elevation: 4,
+      shadowColor: color.withOpacity(0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [AppColors.surface, color.withOpacity(0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _AveragesCard extends StatelessWidget {
-  final double teamGProm;
-  final double teamAProm;
-  final double teamMProm;
-  final int myG;
-  final int myA;
-  final int myM;
-  final String myGoalsPerMin;
-  final String myAssistsPerMin;
-
-  const _AveragesCard({
-    required this.teamGProm,
-    required this.teamAProm,
-    required this.teamMProm,
-    required this.myG,
-    required this.myA,
-    required this.myM,
-    required this.myGoalsPerMin,
-    required this.myAssistsPerMin,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Promedios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [Colors.blue[50]!, Colors.blue[100]!]),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('📊 Promedio equipo', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.sports, size: 20, color: Colors.blue),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Goles / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 26,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(teamGProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.group, size: 20, color: Colors.orange),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Asist / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 26,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(teamAProm.toStringAsFixed(1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 20, color: Colors.green),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Min / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 26,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(teamMProm.toStringAsFixed(0), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [Colors.amber[50]!, Colors.amber[100]!]),
-                      borderRadius: BorderRadius.circular(10),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('⭐ Tus estadísticas', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.sports_soccer, size: 18, color: Colors.blue),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Goles', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 24,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text('$myG', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.group, size: 18, color: Colors.orange),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Asistencias', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 24,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text('$myA', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 18, color: Colors.green),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Minutos', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                const SizedBox(height: 4),
-                                SizedBox(
-                                  height: 24,
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text('$myM', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Goles/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                  const SizedBox(height: 4),
-                                  SizedBox(
-                                    height: 22,
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(myGoalsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Asist/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                                  const SizedBox(height: 4),
-                                  SizedBox(
-                                    height: 22,
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(myAssistsPerMin, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+                padding: const EdgeInsets.all(12),
+                child: Icon(icon, size: 28, color: color),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
         ),
       ),
     );

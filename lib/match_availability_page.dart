@@ -60,6 +60,13 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
   Future<void> _updateAvailability(String status) async {
     if (_currentUserId == null) return;
 
+    // Si el usuario elige "no" o "maybe", mostrar diálogo para motivo opcional
+    String? reason;
+    if (status == 'no' || status == 'maybe') {
+      reason = await _showReasonDialog(status);
+      if (reason == null && !mounted) return; // Usuario canceló
+    }
+
     try {
       // Obtener nombre del jugador
       final playerDoc = await FirebaseFirestore.instance
@@ -82,6 +89,7 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
         'playerId': _currentUserId,
         'playerName': playerName,
         'status': status,
+        'reason': reason ?? '', // Guardar motivo
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -97,6 +105,38 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
         );
       }
     }
+  }
+
+  Future<String?> _showReasonDialog(String status) async {
+    final controller = TextEditingController();
+    final title = status == 'no' ? '¿Por qué no puedes asistir?' : '¿Por qué estás en duda?';
+    final hint = status == 'no' ? 'Ej: Tengo examen, Lesionado, Trabajo...' : 'Ej: Depende del horario, Tengo que confirmar...';
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: const OutlineInputBorder(),
+          ),
+          maxLength: 100,
+          maxLines: 2,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ''), // Sin motivo
+            child: const Text('Omitir'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleConvocado(String playerId, bool isConvocado) async {
@@ -493,6 +533,7 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
                 final avail = filteredAvailabilities[index].data() as Map<String, dynamic>;
                 final playerName = avail['playerName'] ?? 'Jugador';
                 final status = avail['status'] as String?;
+                final reason = avail['reason'] as String? ?? '';
                 final playerId = filteredAvailabilities[index].id;
                 final isConvocado = _convocados.contains(playerId);
 
@@ -500,8 +541,30 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
                   margin: const EdgeInsets.symmetric(vertical: 4),
                   child: ListTile(
                     leading: _getStatusIcon(status),
-                    title: Text(playerName),
-                    subtitle: _buildAvailabilityChip(status),
+                    title: Text(playerName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAvailabilityChip(status),
+                        if (reason.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.comment, size: 14, color: Colors.grey),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  reason,
+                                  style: const TextStyle(fontSize: 12, color: Colors.black54, fontStyle: FontStyle.italic),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                     trailing: isConvocado
                         ? const Chip(
                             label: Text('Convocado', style: TextStyle(fontSize: 11)),

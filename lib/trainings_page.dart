@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class TrainingsPage extends StatelessWidget {
   final String teamId;
@@ -58,13 +59,25 @@ class TrainingsPage extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Theme.of(context).primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => EditTrainingPage(teamId: teamId)),
+      floatingActionButton: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser?.uid).snapshots(),
+        builder: (context, userSnap) {
+          if (!userSnap.hasData) return const SizedBox.shrink();
+          final userData = userSnap.data!.data() as Map<String, dynamic>?;
+          final role = userData?['role'] ?? '';
+          
+          // Solo mostrar botón de crear entrenamiento si es entrenador
+          if (role.toLowerCase() != 'entrenador') return const SizedBox.shrink();
+          
+          return FloatingActionButton(
+            backgroundColor: Theme.of(context).primaryColor,
+            child: const Icon(Icons.add, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => EditTrainingPage(teamId: teamId)),
+              );
+            },
           );
         },
       ),

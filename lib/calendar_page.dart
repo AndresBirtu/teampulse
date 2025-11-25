@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'match_page.dart' as match;
 import 'trainings_page.dart';
+import 'theme/app_colors.dart';
 
 class CalendarPage extends StatefulWidget {
   final String teamId;
@@ -119,7 +120,7 @@ class _CalendarPageState extends State<CalendarPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendario'),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: AppColors.primary,
         elevation: 2,
         actions: [
           IconButton(
@@ -150,25 +151,26 @@ class _CalendarPageState extends State<CalendarPage> {
                       titleCentered: true,
                       formatButtonShowsNext: false,
                       formatButtonDecoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      formatButtonTextStyle: const TextStyle(color: Colors.white),
+                      formatButtonTextStyle: const TextStyle(color: AppColors.textOnPrimary),
                     ),
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.5),
+                        color: AppColors.primaryLight.withOpacity(0.6),
                         shape: BoxShape.circle,
                       ),
-                      selectedDecoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
+                      selectedDecoration: const BoxDecoration(
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
-                      markerDecoration: BoxDecoration(
-                        color: Colors.orange,
+                      markerDecoration: const BoxDecoration(
+                        color: AppColors.accent,
                         shape: BoxShape.circle,
                       ),
                       markersMaxCount: 3,
+                      weekendTextStyle: TextStyle(color: AppColors.textSecondary),
                     ),
                     onDaySelected: (selectedDay, focusedDay) {
                       if (!isSameDay(_selectedDay, selectedDay)) {
@@ -229,12 +231,26 @@ class _CalendarPageState extends State<CalendarPage> {
 
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: isMatch ? Colors.red[700] : Colors.green[700],
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: isMatch ? AppColors.matchGradient : AppColors.trainingGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (isMatch ? AppColors.matchColor : AppColors.trainingColor).withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Icon(
                 isMatch ? Icons.sports_soccer : Icons.fitness_center,
-                color: Colors.white,
+                color: AppColors.textOnPrimary,
+                size: 24,
               ),
             ),
             title: Text(
@@ -254,9 +270,9 @@ class _CalendarPageState extends State<CalendarPage> {
                 if (isMatch && event['played'] == true)
                   const Row(
                     children: [
-                      Icon(Icons.check_circle, size: 14, color: Colors.green),
+                      Icon(Icons.check_circle, size: 14, color: AppColors.success),
                       SizedBox(width: 4),
-                      Text('Jugado', style: TextStyle(color: Colors.green)),
+                      Text('Jugado', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 if (!isMatch && event['location'] != null)
@@ -269,10 +285,10 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
               ],
             ),
-            trailing: Icon(
+            trailing: const Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: Theme.of(context).primaryColor,
+              color: AppColors.primary,
             ),
             onTap: () {
               if (isMatch) {
