@@ -1368,19 +1368,27 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   ),
                                                   const SizedBox(height: 4),
                                                   if (matchData['played'] == true)
-                                                    Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        const Icon(Icons.emoji_events, size: 14, color: Colors.blue),
-                                                        const SizedBox(width: 4),
-                                                        Flexible(
-                                                          child: Text(
-                                                            'Resultado: ${matchData['golesTeamA'] ?? 0} - ${matchData['golesTeamB'] ?? 0}',
-                                                            style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
-                                                            overflow: TextOverflow.ellipsis,
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue.shade50,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(Icons.emoji_events, size: 14, color: Colors.blue),
+                                                          const SizedBox(width: 4),
+                                                          Text(
+                                                            '${matchData['golesTeamA'] ?? 0} - ${matchData['golesTeamB'] ?? 0}',
+                                                            style: const TextStyle(
+                                                              color: Colors.blue,
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ],
+                                                        ],
+                                                      ),
                                                     ),
                                                   if (isConvocado && matchData['played'] != true)
                                                     Row(
@@ -1577,16 +1585,16 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
-      shadowColor: color.withOpacity(0.3),
+      elevation: 2,
+      shadowColor: color.withOpacity(0.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [AppColors.surface, color.withOpacity(0.05)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          color: Colors.white,
+          border: Border.all(
+            color: color.withOpacity(0.2),
+            width: 1.5,
           ),
         ),
         child: Padding(
@@ -1595,17 +1603,8 @@ class _StatCard extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
-                  ),
+                  color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
                 ),
                 padding: const EdgeInsets.all(12),
                 child: Icon(icon, size: 28, color: color),
@@ -1613,7 +1612,7 @@ class _StatCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 value,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
               ),
               const SizedBox(height: 4),
               Text(

@@ -48,14 +48,10 @@ class MatchesPage extends StatelessWidget {
           // Solo mostrar botón de crear partido si es entrenador
           if (role.toLowerCase() != 'entrenador') return const SizedBox.shrink();
           
-          return FloatingActionButton.extended(
+          return FloatingActionButton(
             backgroundColor: AppColors.primary,
             elevation: 6,
-            icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
-            label: const Text(
-              'Nuevo Partido',
-              style: TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.w600),
-            ),
+            child: const Icon(Icons.add, color: AppColors.textOnPrimary, size: 28),
             onPressed: () {
               Navigator.push(
                 context,
@@ -156,27 +152,26 @@ class MatchesPage extends StatelessWidget {
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.matchPlayed.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.emoji_events, size: 16, color: AppColors.goals),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          'Resultado: ${(match['golesTeamA'] ?? 0).toString()} - ${(match['golesTeamB'] ?? 0).toString()}',
-                                          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.matchPlayed.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.emoji_events, size: 16, color: AppColors.goals),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${match['golesTeamA'] ?? 0} - ${match['golesTeamB'] ?? 0}',
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
