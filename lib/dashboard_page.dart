@@ -336,54 +336,320 @@ class _DashboardPageState extends State<DashboardPage> {
                                 .snapshots(),
                             builder: (context, matchSnapshot) {
                               int played = 0, won = 0, lost = 0;
+                              int currentStreak = 0;
+                              DateTime? nextMatchDate;
+                              
                               if (matchSnapshot.hasData) {
                                 final matches = matchSnapshot.data?.docs ?? [];
                                 played = matches.length;
-                                for (var m in matches) {
+                                
+                                // Sort matches by date
+                                final sortedMatches = matches.map((m) {
                                   final data = m.data() as Map<String, dynamic>?;
+                                  return {'doc': m, 'data': data};
+                                }).toList()
+                                  ..sort((a, b) {
+                                    final dataA = a['data'] as Map<String, dynamic>?;
+                                    final dataB = b['data'] as Map<String, dynamic>?;
+                                    final dateA = (dataA?['date'] as Timestamp?)?.toDate() ?? DateTime(1970);
+                                    final dateB = (dataB?['date'] as Timestamp?)?.toDate() ?? DateTime(1970);
+                                    return dateA.compareTo(dateB);
+                                  });
+                                
+                                // Calculate wins, losses, draws and streak
+                                bool streakActive = true;
+                                for (var m in sortedMatches.reversed) {
+                                  final data = m['data'] as Map<String, dynamic>?;
+                                  final isPlayed = data?['played'] == true;
                                   final golesTeamA = (data?['golesTeamA'] as int?) ?? 0;
                                   final golesTeamB = (data?['golesTeamB'] as int?) ?? 0;
-                                  if (golesTeamA > golesTeamB) won++;
-                                  if (golesTeamA < golesTeamB) lost++;
+                                  
+                                  if (isPlayed) {
+                                    if (golesTeamA > golesTeamB) {
+                                      won++;
+                                      if (streakActive) currentStreak++;
+                                    } else if (golesTeamA < golesTeamB) {
+                                      lost++;
+                                      streakActive = false;
+                                    } else {
+                                      streakActive = false;
+                                    }
+                                  }
+                                }
+                                
+                                // Find next match
+                                final now = DateTime.now();
+                                for (var m in sortedMatches) {
+                                  final data = m['data'] as Map<String, dynamic>?;
+                                  final date = (data?['date'] as Timestamp?)?.toDate();
+                                  final isPlayed = data?['played'] == true;
+                                  
+                                  if (date != null && date.isAfter(now) && !isPlayed) {
+                                    nextMatchDate = date;
+                                    break;
+                                  }
                                 }
                               }
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              
+                              final daysUntilNext = nextMatchDate != null 
+                                ? nextMatchDate.difference(DateTime.now()).inDays 
+                                : null;
+                              
+                              return Column(
                                 children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Jugados', played),
-                                      child: _StatCard(
-                                        icon: Icons.sports_soccer,
-                                        label: "Jugados",
-                                        value: played.toString(),
-                                        color: Colors.orange,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () => _showMatchStatsDialog(context, 'Partidos Jugados', played),
+                                          child: _StatCard(
+                                            icon: Icons.sports_soccer,
+                                            label: "Jugados",
+                                            value: played.toString(),
+                                            color: Colors.orange,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () => _showMatchStatsDialog(context, 'Partidos Ganados', won),
+                                          child: _StatCard(
+                                            icon: Icons.emoji_events,
+                                            label: "Ganados",
+                                            value: won.toString(),
+                                            color: Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () => _showMatchStatsDialog(context, 'Partidos Perdidos', lost),
+                                          child: _StatCard(
+                                            icon: Icons.cancel,
+                                            label: "Perdidos",
+                                            value: lost.toString(),
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Ganados', won),
-                                      child: _StatCard(
-                                        icon: Icons.emoji_events,
-                                        label: "Ganados",
-                                        value: won.toString(),
-                                        color: Colors.green,
+                                  const SizedBox(height: 12),
+                                  // New widgets row
+                                  Row(
+                                    children: [
+                                      // Next match countdown
+                                      if (daysUntilNext != null)
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [AppColors.primary.withOpacity(0.8), AppColors.primaryDark],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.primary.withOpacity(0.3),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    const Icon(Icons.timer, color: Colors.white, size: 20),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      daysUntilNext == 0 ? '¡Hoy!' : '$daysUntilNext días',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Próximo partido',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.9),
+                                                    fontSize: 11,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      if (daysUntilNext != null) const SizedBox(width: 8),
+                                      // Win streak
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [AppColors.secondary.withOpacity(0.8), const Color(0xFF388E3C)],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.secondary.withOpacity(0.3),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  const Icon(Icons.local_fire_department, color: Colors.white, size: 20),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    '$currentStreak',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                currentStreak == 1 ? 'Victoria' : 'Racha',
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.9),
+                                                  fontSize: 11,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => _showMatchStatsDialog(context, 'Partidos Perdidos', lost),
-                                      child: _StatCard(
-                                        icon: Icons.cancel,
-                                        label: "Perdidos",
-                                        value: lost.toString(),
-                                        color: Colors.red,
-                                      ),
-                                    ),
+                                  // Player of the month
+                                  const SizedBox(height: 12),
+                                  StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('teams')
+                                        .doc(teamId)
+                                        .collection('players')
+                                        .snapshots(),
+                                    builder: (context, playersSnapshot) {
+                                      if (!playersSnapshot.hasData) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      
+                                      final players = playersSnapshot.data?.docs ?? [];
+                                      if (players.isEmpty) return const SizedBox.shrink();
+                                      
+                                      // Find player with most goals + assists (excluding coach)
+                                      var topPlayer = players.first;
+                                      int maxScore = 0;
+                                      
+                                      for (var player in players) {
+                                        final data = player.data() as Map<String, dynamic>?;
+                                        final role = data?['role'] as String?;
+                                        if (role?.toLowerCase() == 'entrenador') continue;
+                                        
+                                        final goles = (data?['goles'] as int?) ?? 0;
+                                        final asistencias = (data?['asistencias'] as int?) ?? 0;
+                                        final score = goles + asistencias;
+                                        
+                                        if (score > maxScore) {
+                                          maxScore = score;
+                                          topPlayer = player;
+                                        }
+                                      }
+                                      
+                                      if (maxScore == 0) return const SizedBox.shrink();
+                                      
+                                      final topData = topPlayer.data() as Map<String, dynamic>?;
+                                      final topName = topData?['name'] ?? 'Jugador';
+                                      final topGoles = (topData?['goles'] as int?) ?? 0;
+                                      final topAsistencias = (topData?['asistencias'] as int?) ?? 0;
+                                      
+                                      return Container(
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFFFD700).withOpacity(0.4),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.3),
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: const Icon(Icons.star, color: Colors.white, size: 32),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text(
+                                                    '⭐ Jugador destacado',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    topName,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    '$topGoles goles • $topAsistencias asistencias',
+                                                    style: TextStyle(
+                                                      color: Colors.white.withOpacity(0.95),
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               );

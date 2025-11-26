@@ -15,6 +15,128 @@ class _PlayersPageState extends State<PlayersPage> {
   String _sortBy = 'name'; // 'name', 'name-desc', 'position'
   String _filterPosition = ''; // '' = no filter
 
+  void _showInjuryDialog(BuildContext context, String playerId, Map<String, dynamic> playerData, String playerName) {
+    final isCurrentlyInjured = playerData['injured'] == true;
+    final currentReturnDate = (playerData['injuryReturnDate'] as Timestamp?)?.toDate();
+    
+    DateTime? selectedDate = currentReturnDate;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(isCurrentlyInjured ? 'Gestionar lesión' : 'Marcar como lesionado'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Jugador: $playerName', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  if (!isCurrentlyInjured) ...[
+                    const Text('Fecha estimada de vuelta:', style: TextStyle(fontSize: 14)),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.calendar_today, size: 18),
+                      label: Text(
+                        selectedDate != null
+                            ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                            : 'Seleccionar fecha',
+                      ),
+                      onPressed: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate ?? DateTime.now().add(const Duration(days: 7)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          setState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              currentReturnDate != null
+                                  ? 'Vuelta: ${currentReturnDate.day}/${currentReturnDate.month}/${currentReturnDate.year}'
+                                  : 'Lesionado sin fecha de vuelta',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                if (isCurrentlyInjured)
+                  TextButton(
+                    onPressed: () async {
+                      await FirebaseFirestore.instance
+                          .collection('teams')
+                          .doc(widget.teamId)
+                          .collection('players')
+                          .doc(playerId)
+                          .update({
+                        'injured': false,
+                        'injuryReturnDate': FieldValue.delete(),
+                      });
+                      if (ctx.mounted) {
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Jugador dado de alta ✅')),
+                        );
+                      }
+                    },
+                    child: const Text('Dar de alta', style: TextStyle(color: Colors.green)),
+                  )
+                else
+                  TextButton(
+                    onPressed: () async {
+                      await FirebaseFirestore.instance
+                          .collection('teams')
+                          .doc(widget.teamId)
+                          .collection('players')
+                          .doc(playerId)
+                          .update({
+                        'injured': true,
+                        'injuryReturnDate': selectedDate != null ? Timestamp.fromDate(selectedDate!) : null,
+                      });
+                      if (ctx.mounted) {
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Jugador marcado como lesionado')),
+                        );
+                      }
+                    },
+                    child: const Text('Marcar lesionado', style: TextStyle(color: Colors.red)),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final playersStream = FirebaseFirestore.instance
@@ -37,6 +159,18 @@ class _PlayersPageState extends State<PlayersPage> {
           }
 
           var players = snapshot.data!.docs;
+          
+          // Filter out coaches from the list
+          players = players.where((p) {
+            final data = p.data() as Map<String, dynamic>;
+            final role = data['role'] as String?;
+            final isCoach = data['isCoach'] as bool? ?? false;
+            return !isCoach && role?.toLowerCase() != 'entrenador' && role?.toLowerCase() != 'coach';
+          }).toList();
+          
+          // Separate injured players
+          final injuredPlayers = players.where((p) => (p.data() as Map<String, dynamic>)['injured'] == true).toList();
+          final activePlayers = players.where((p) => (p.data() as Map<String, dynamic>)['injured'] != true).toList();
 
           // Filtrar por posición si hay filtro activo
           if (_filterPosition.isNotEmpty) {
@@ -121,6 +255,60 @@ class _PlayersPageState extends State<PlayersPage> {
                 ),
               ),
               const Divider(height: 1),
+              // Injured players section
+              if (injuredPlayers.isNotEmpty && _filterPosition.isEmpty)
+                Container(
+                  color: Colors.red.shade50,
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.medical_services, color: Colors.red, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Bajas por lesión (${injuredPlayers.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...injuredPlayers.map((player) {
+                        final playerData = player.data() as Map<String, dynamic>;
+                        final name = playerData['name'] ?? 'Jugador';
+                        final injuryReturnDate = (playerData['injuryReturnDate'] as Timestamp?)?.toDate();
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_off, size: 16, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              if (injuryReturnDate != null)
+                                Text(
+                                  '${injuryReturnDate.day}/${injuryReturnDate.month}',
+                                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              if (injuredPlayers.isNotEmpty && _filterPosition.isEmpty)
+                const Divider(height: 1),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -131,47 +319,123 @@ class _PlayersPageState extends State<PlayersPage> {
                     final name = playerData['name'] ?? 'Jugador sin nombre';
                     final photoUrl = playerData['photoUrl'] ?? '';
                     final initials = name.split(' ').map((s) => s.isNotEmpty ? s[0] : '').take(2).join();
+                    final isInjured = playerData['injured'] == true;
+                    final injuryReturnDate = (playerData['injuryReturnDate'] as Timestamp?)?.toDate();
+                    
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 2,
+                      color: isInjured ? Colors.red.shade50 : null,
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                        leading: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
-                          backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                          child: photoUrl.isEmpty
-                              ? Text(initials.toUpperCase(), style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold))
-                              : null,
-                        ),
-                        title: Text(
-                          name,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Text(
-                          "Posición: ${playerData['posicion'] ?? '-'} · Partidos: ${playerData['partidos'] ?? 0}\nGoles: ${playerData['goles'] ?? 0} · Asist: ${playerData['asistencias'] ?? 0}",
-                          style: const TextStyle(color: Colors.black54, fontSize: 13),
-                        ),
-                        isThreeLine: true,
-                        trailing: InkWell(
-                          borderRadius: BorderRadius.circular(24),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => EditPlayerPage(
-                                  teamId: widget.teamId,
-                                  playerId: player.id,
-                                  playerData: playerData,
+                        leading: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+                              backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                              child: photoUrl.isEmpty
+                                  ? Text(initials.toUpperCase(), style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold))
+                                  : null,
+                            ),
+                            if (isInjured)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.medical_services, color: Colors.white, size: 14),
                                 ),
                               ),
-                            );
-                          },
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
-                            child: Icon(Icons.edit, color: Theme.of(context).primaryColor, size: 18),
-                          ),
+                          ],
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            if (isInjured)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'LESIONADO',
+                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Posición: ${playerData['posicion'] ?? '-'} · Partidos: ${playerData['partidos'] ?? 0}\nGoles: ${playerData['goles'] ?? 0} · Asist: ${playerData['asistencias'] ?? 0}",
+                              style: const TextStyle(color: Colors.black54, fontSize: 13),
+                            ),
+                            if (isInjured && injuryReturnDate != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today, size: 12, color: Colors.red),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Vuelta estimada: ${injuryReturnDate.day}/${injuryReturnDate.month}/${injuryReturnDate.year}',
+                                    style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                        isThreeLine: true,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onTap: () => _showInjuryDialog(context, player.id, playerData, name),
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: isInjured ? Colors.red.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+                                child: Icon(
+                                  isInjured ? Icons.healing : Icons.medical_services_outlined,
+                                  color: isInjured ? Colors.red : Colors.orange,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditPlayerPage(
+                                      teamId: widget.teamId,
+                                      playerId: player.id,
+                                      playerData: playerData,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
+                                child: Icon(Icons.edit, color: Theme.of(context).primaryColor, size: 16),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );

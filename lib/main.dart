@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; 
 import 'home_page.dart';
 import 'theme/app_colors.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   try {
-    await Firebase.initializeApp(); 
+    await Firebase.initializeApp();
+    await NotificationService().initialize();
     runApp(const MyApp());
   } catch (e) {
     runApp(ErrorApp(error: e.toString()));

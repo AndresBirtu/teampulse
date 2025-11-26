@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'recuperarContrasena_page.dart';
+import 'forgotPassword_page.dart';
 import 'dashboard_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -128,7 +128,7 @@ class _LoginTabState extends State<_LoginTab> {
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RecuperarContrasenaPage()));
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ForgotPasswordPage()));
                   },
                   child: Text(
                     "¿Olvidaste tu contraseña?",

@@ -322,7 +322,7 @@ class MatchesPage extends StatelessWidget {
                                     builder: (_) => MatchAvailabilityPage(
                                       teamId: teamId,
                                       matchId: matchId,
-                                      isCoach: isCoachCheck,
+                                      isCoach: isCoach,
                                     ),
                                   ),
                                 );

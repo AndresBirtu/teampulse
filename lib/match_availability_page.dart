@@ -185,6 +185,76 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
     }
   }
 
+  void _showMessageDialog(String? currentMessage) {
+    final controller = TextEditingController(text: currentMessage ?? '');
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Mensaje para el equipo'),
+          content: TextField(
+            controller: controller,
+            maxLines: 5,
+            maxLength: 500,
+            decoration: const InputDecoration(
+              hintText: 'Ej: Recordad llevar camiseta azul, concentración a las 10:00...',
+              border: OutlineInputBorder(),
+              helperText: 'Este mensaje será visible para todos los jugadores',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            if (currentMessage != null && currentMessage.isNotEmpty)
+              TextButton(
+                onPressed: () async {
+                  await FirebaseFirestore.instance
+                      .collection('teams')
+                      .doc(widget.teamId)
+                      .collection('matches')
+                      .doc(widget.matchId)
+                      .update({'coachMessage': FieldValue.delete()});
+                  if (ctx.mounted) {
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Mensaje eliminado')),
+                    );
+                  }
+                },
+                child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+              ),
+            TextButton(
+              onPressed: () async {
+                final message = controller.text.trim();
+                if (message.isNotEmpty) {
+                  await FirebaseFirestore.instance
+                      .collection('teams')
+                      .doc(widget.teamId)
+                      .collection('matches')
+                      .doc(widget.matchId)
+                      .update({
+                    'coachMessage': message,
+                    'coachMessageUpdatedAt': FieldValue.serverTimestamp(),
+                  });
+                  if (ctx.mounted) {
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Mensaje guardado ✅')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -229,6 +299,81 @@ class _MatchAvailabilityPageState extends State<MatchAvailabilityPage> {
                   const SizedBox(height: 4),
                   Text(formattedDate, style: const TextStyle(color: Colors.black54)),
                 ],
+              ),
+            ),
+
+            // Coach message section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('teams')
+                    .doc(widget.teamId)
+                    .collection('matches')
+                    .doc(widget.matchId)
+                    .snapshots(),
+                builder: (context, matchSnapshot) {
+                  final matchData = matchSnapshot.data?.data() as Map<String, dynamic>?;
+                  final coachMessage = matchData?['coachMessage'] as String?;
+                  
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: widget.isCoach ? Colors.blue.shade50 : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: widget.isCoach ? Colors.blue.shade200 : Colors.green.shade200,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.message,
+                              color: widget.isCoach ? Colors.blue : Colors.green,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Mensaje del entrenador',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (widget.isCoach)
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => _showMessageDialog(coachMessage),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (coachMessage != null && coachMessage.isNotEmpty)
+                          Text(
+                            coachMessage,
+                            style: const TextStyle(fontSize: 14, height: 1.4),
+                          )
+                        else
+                          Text(
+                            widget.isCoach
+                                ? 'Toca el lápiz para añadir un mensaje para el equipo'
+                                : 'El entrenador aún no ha dejado ningún mensaje',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
 

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class RecuperarContrasenaPage extends StatefulWidget {
-  const RecuperarContrasenaPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
 
   @override
-  State<RecuperarContrasenaPage> createState() => _RecuperarContrasenaPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _RecuperarContrasenaPageState extends State<RecuperarContrasenaPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController _emailCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _loading = false;

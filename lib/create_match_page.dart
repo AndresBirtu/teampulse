@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/notification_service.dart';
 
 class CreateMatchPage extends StatefulWidget {
   final String teamId;
@@ -105,6 +106,20 @@ class _CreateMatchPageState extends State<CreateMatchPage> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Partido guardado, pero fallo al generar hoja de stats: $e')));
         }
+      }
+
+      // Schedule notification 24h before match
+      try {
+        final notificationId = matchRef.id.hashCode;
+        await NotificationService().scheduleMatchReminder(
+          id: notificationId,
+          title: '⚽ Partido mañana',
+          body: '${_teamAController.text} vs ${_teamBController.text}',
+          matchDate: _matchDate!,
+        );
+      } catch (e) {
+        // Don't block if notification fails
+        debugPrint('Failed to schedule notification: $e');
       }
 
       if (context.mounted) {
