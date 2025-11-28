@@ -36,11 +36,11 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
     asistenciasController =
         TextEditingController(text: widget.playerData['asistencias']?.toString() ?? '0');
     
-    // Crear lista base de posiciones
-    posiciones = ['Portero', 'Defensa', 'Centrocampista', 'Delantero', 'Lateral', 'Delantero Centro'];
+    // Crear lista base de posiciones (Futsal)
+    posiciones = ['Portero', 'Cierre', 'Pivot', 'Ala'];
     
-    // Obtener la posición guardada, o usar 'Defensa' por defecto
-    String posicionGuardada = widget.playerData['posicion'] ?? 'Defensa';
+    // Obtener la posición guardada, o usar 'Ala' por defecto
+    String posicionGuardada = widget.playerData['posicion'] ?? 'Ala';
     
     // Si la posición guardada no está en la lista, añadirla (para evitar duplicados)
     if (!posiciones.contains(posicionGuardada) && posicionGuardada.isNotEmpty) {
@@ -118,7 +118,7 @@ class _EditPlayerPageState extends State<EditPlayerPage> {
                   value: selectedPosicion,
                   decoration: const InputDecoration(labelText: "Posición", border: OutlineInputBorder()),
                   items: posiciones.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
-                  onChanged: (value) => setState(() => selectedPosicion = value ?? 'Defensa'),
+                  onChanged: (value) => setState(() => selectedPosicion = value ?? 'Ala'),
                 ),
                 const SizedBox(height: 10),
                 TextField(

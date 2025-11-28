@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:teampulse/home_page.dart';
 import 'match_page.dart';
 import 'players_page.dart';
@@ -11,6 +12,7 @@ import 'trainings_page.dart';
 import 'player_profile_page.dart';
 import 'match_availability_page.dart';
 import 'calendar_page.dart';
+import 'language_settings_page.dart';
 import 'theme/app_colors.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -189,6 +191,18 @@ class _DashboardPageState extends State<DashboardPage> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.language),
+            tooltip: 'Cambiar idioma',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LanguageSettingsPage(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
               final playerId = uid;
@@ -309,6 +323,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
+
+                // Next match card with animation - visible at the top for all users
+                _NextMatchCard(teamId: teamId),
 
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
@@ -646,6 +663,121 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 ],
                                               ),
                                             ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  // Next match section
+                                  const SizedBox(height: 12),
+                                  StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('teams')
+                                        .doc(teamId)
+                                        .collection('matches')
+                                        .where('played', isEqualTo: false)
+                                        .orderBy('date', descending: false)
+                                        .limit(1)
+                                        .snapshots(),
+                                    builder: (context, nextMatchSnapshot) {
+                                      if (!nextMatchSnapshot.hasData || nextMatchSnapshot.data!.docs.isEmpty) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      
+                                      final matchDoc = nextMatchSnapshot.data!.docs.first;
+                                      final matchData = matchDoc.data() as Map<String, dynamic>;
+                                      final opponent = matchData['rival'] ?? 'Rival';
+                                      final matchDate = (matchData['date'] as Timestamp?)?.toDate();
+                                      final location = matchData['location'] ?? '';
+                                      final dateStr = matchDate != null 
+                                          ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
+                                          : 'N/A';
+                                      
+                                      return Container(
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [AppColors.primary.withOpacity(0.9), AppColors.primaryDark],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary.withOpacity(0.3),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'next_match'.tr(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.sports_soccer, color: Colors.white70, size: 18),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    opponent,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.schedule, color: Colors.white70, size: 16),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  dateStr,
+                                                  style: const TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (location.isNotEmpty) ...[
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                children: [
+                                                  const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      location,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 13,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       );
@@ -1280,6 +1412,121 @@ class _DashboardPageState extends State<DashboardPage> {
                           const SizedBox(height: 10),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
+                                .collection('teams')
+                                .doc(teamId)
+                                .collection('matches')
+                                .where('played', isEqualTo: false)
+                                .orderBy('date', descending: false)
+                                .limit(1)
+                                .snapshots(),
+                            builder: (context, nextMatchSnapshot) {
+                              if (!nextMatchSnapshot.hasData || nextMatchSnapshot.data!.docs.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+                              
+                              final matchDoc = nextMatchSnapshot.data!.docs.first;
+                              final matchData = matchDoc.data() as Map<String, dynamic>;
+                              final opponent = matchData['rival'] ?? 'Rival';
+                              final matchDate = (matchData['date'] as Timestamp?)?.toDate();
+                              final location = matchData['location'] ?? '';
+                              final dateStr = matchDate != null 
+                                  ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
+                                  : 'N/A';
+                              
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [AppColors.primary.withOpacity(0.9), AppColors.primaryDark],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Próximo Partido',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.sports_soccer, color: Colors.white70, size: 18),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            opponent,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.schedule, color: Colors.white70, size: 16),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          dateStr,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (location.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              location,
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 13,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
                                 .collection("teams")
                                 .doc(teamId)
                                 .collection("matches")
@@ -1622,6 +1869,378 @@ class _StatCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NextMatchCard extends StatefulWidget {
+  final String teamId;
+
+  const _NextMatchCard({required this.teamId});
+
+  @override
+  State<_NextMatchCard> createState() => __NextMatchCardState();
+}
+
+class __NextMatchCardState extends State<_NextMatchCard> {
+  bool _isVisible = true;
+
+  void _hideCard() {
+    setState(() {
+      _isVisible = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isVisible) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('teams')
+            .doc(widget.teamId)
+            .collection('matches')
+            .where('played', isEqualTo: false)
+            .snapshots(),
+        builder: (context, nextMatchSnapshot) {
+
+          // Mostrar placeholder mientras carga
+          if (!nextMatchSnapshot.hasData) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'PRÓXIMO PARTIDO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: _hideCard,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const SizedBox(
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // Si no hay partidos pendientes
+          if (nextMatchSnapshot.data!.docs.isEmpty) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'PRÓXIMO PARTIDO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: _hideCard,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No hay partidos programados',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // Ordenar los documentos por fecha
+          final docs = nextMatchSnapshot.data!.docs;
+          docs.sort((a, b) {
+            final dateA = (a['date'] as Timestamp?)?.toDate() ?? DateTime.now();
+            final dateB = (b['date'] as Timestamp?)?.toDate() ?? DateTime.now();
+            return dateA.compareTo(dateB);
+          });
+
+          final matchDoc = docs.first;
+          final matchData = matchDoc.data() as Map<String, dynamic>;
+          final opponentTeam = matchData['rival'] ?? 'Equipo contrario';
+          final matchDate = (matchData['date'] as Timestamp?)?.toDate();
+          final location = matchData['location'] ?? '';
+          final dateStr = matchDate != null 
+              ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
+              : 'N/A';
+          final timeStr = matchDate != null
+              ? '${matchDate.hour}:${matchDate.minute.toString().padLeft(2, '0')}'
+              : '';
+
+          // Obtener el nombre del equipo actual del Firebase
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('teams')
+                .doc(widget.teamId)
+                .get(),
+            builder: (context, teamSnapshot) {
+              final teamName = (teamSnapshot.data?.data() as Map<String, dynamic>?)?['name'] ?? 'Tu equipo';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'PRÓXIMO PARTIDO',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    teamName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'vs',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    opponentTeam,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: _hideCard,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+                    bottom: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: Colors.white70, size: 20),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'FECHA',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                dateStr,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (timeStr.isNotEmpty)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.schedule, color: Colors.white70, size: 20),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'HORA',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  timeStr,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (location.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.white70, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'UBICACIÓN',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            location,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+              );
+            },
+          );
+        },
       ),
     );
   }

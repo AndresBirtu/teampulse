@@ -244,7 +244,7 @@ class _PlayersPageState extends State<PlayersPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         items: [
                           const DropdownMenuItem(value: '', child: Text('Todas las posiciones')),
-                          ...['Portero', 'Defensa', 'Centrocampista', 'Delantero', 'Lateral', 'Delantero Centro']
+                          ...['Portero', 'Cierre', 'Pivot', 'Ala']
                               .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                               .toList(),
                         ],

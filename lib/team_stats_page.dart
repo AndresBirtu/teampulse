@@ -362,7 +362,7 @@ class _PlayerStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determinar color según posición
+    // Determinar color según posición (Futsal)
     Color posicionColor = Colors.blue;
     IconData posicionIcon = Icons.sports_soccer;
 
@@ -370,15 +370,13 @@ class _PlayerStatCard extends StatelessWidget {
         posicion.toLowerCase().contains("keeper")) {
       posicionColor = Colors.purple;
       posicionIcon = Icons.security;
-    } else if (posicion.toLowerCase().contains("defensa")) {
+    } else if (posicion.toLowerCase().contains("cierre")) {
       posicionColor = Colors.red;
       posicionIcon = Icons.shield;
-    } else if (posicion.toLowerCase().contains("centrocampista") ||
-        posicion.toLowerCase().contains("medio")) {
+    } else if (posicion.toLowerCase().contains("pivot")) {
       posicionColor = Colors.orange;
       posicionIcon = Icons.trending_up;
-    } else if (posicion.toLowerCase().contains("delantero") ||
-        posicion.toLowerCase().contains("ataque")) {
+    } else if (posicion.toLowerCase().contains("ala")) {
       posicionColor = Colors.green;
       posicionIcon = Icons.flash_on;
     }

@@ -1,16 +1,26 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; 
+import 'package:easy_localization/easy_localization.dart';
 import 'home_page.dart';
 import 'theme/app_colors.dart';
 import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
+  await EasyLocalization.ensureInitialized();
+  
   try {
     await Firebase.initializeApp();
     await NotificationService().initialize();
-    runApp(const MyApp());
+    runApp(
+      EasyLocalization(
+        supportedLocales: const [Locale('es'), Locale('en')],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('es'),
+        child: const MyApp(),
+      ),
+    );
   } catch (e) {
     runApp(ErrorApp(error: e.toString()));
   }
@@ -23,6 +33,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CoachUp',
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
