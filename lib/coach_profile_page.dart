@@ -9,14 +9,7 @@ import 'theme/app_themes.dart';
 import 'services/preferences_service.dart';
 
 class CoachProfilePage extends StatefulWidget {
-  final ThemeOption? currentTheme;
-  final Function(ThemeOption)? onThemeChanged;
-
-  const CoachProfilePage({
-    this.currentTheme,
-    this.onThemeChanged,
-    super.key,
-  });
+  const CoachProfilePage({super.key});
 
   @override
   State<CoachProfilePage> createState() => _CoachProfilePageState();
@@ -26,10 +19,15 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
   String? _coachPhotoUrl;
   String? _coachName;
   bool _uploadingPhoto = false;
+  late ThemeOption _selectedTheme;
+  String? _teamId;
+  bool _isCoach = false;
+  bool _isLoadingProfile = true;
 
   @override
   void initState() {
     super.initState();
+    _selectedTheme = PreferencesService.getSelectedTheme();
     _loadCoachProfile();
   }
 
@@ -38,15 +36,45 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
     if (user == null) return;
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        if (mounted) {
+          setState(() => _isLoadingProfile = false);
+        }
+        return;
+      }
       final data = doc.data() ?? {};
+      final teamId = data['teamId'] as String?;
+      final role = (data['role'] as String?)?.toLowerCase();
+      ThemeOption? teamTheme;
+      if (teamId != null && teamId.isNotEmpty) {
+        final teamDoc = await FirebaseFirestore.instance.collection('teams').doc(teamId).get();
+        final storedTheme = teamDoc.data()?['theme'] as String?;
+        if (storedTheme != null) {
+          try {
+            teamTheme = ThemeOption.values.byName(storedTheme);
+          } catch (_) {}
+        }
+      }
       if (mounted) {
         setState(() {
           _coachPhotoUrl = data['photoUrl'] as String?;
           _coachName = data['name'] as String?;
+          _teamId = teamId;
+          _isCoach = role == 'entrenador' || role == 'coach';
+          if (teamTheme != null) {
+            _selectedTheme = teamTheme;
+          }
+          _isLoadingProfile = false;
         });
       }
-    } catch (_) {}
+      if (teamTheme != null) {
+        await PreferencesService.setSelectedTheme(teamTheme);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingProfile = false);
+      }
+    }
   }
 
   Future<void> _pickCoachPhoto() async {
@@ -86,6 +114,29 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingProfile) {
+      return Scaffold(
+        appBar: AppBar(title: Text('profile'.tr())),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_isCoach) {
+      return Scaffold(
+        appBar: AppBar(title: Text('profile'.tr())),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              'Solo el entrenador principal puede modificar estos ajustes.',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('profile'.tr()),
@@ -157,26 +208,23 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
           ),
 
           // Selector de Tema
-          if (widget.currentTheme != null && widget.onThemeChanged != null)
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                leading: Icon(
-                  Icons.palette,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                title: Text('theme'.tr()),
-                subtitle: Text(
-                  context.locale.languageCode == 'en'
-                      ? widget.currentTheme?.displayNameEn ?? 'Blue'
-                      : widget.currentTheme?.displayName ?? 'Azul',
-                ),
-                trailing: Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  _showThemeDialog(context);
-                },
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: Icon(
+                Icons.palette,
+                color: Theme.of(context).colorScheme.primary,
               ),
+              title: Text('theme'.tr()),
+              subtitle: Text(
+                context.locale.languageCode == 'en'
+                    ? _selectedTheme.displayNameEn
+                    : _selectedTheme.displayName,
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => _showThemeDialog(context),
             ),
+          ),
 
           const SizedBox(height: 16),
 
@@ -240,26 +288,26 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
                         ? theme.displayNameEn
                         : theme.displayName,
                   ),
-                  trailing: widget.currentTheme == theme
+                  trailing: _selectedTheme == theme
                       ? Icon(Icons.check_circle,
                           color: Theme.of(context).colorScheme.primary)
                       : null,
-                  onTap: () {
-                    // Llamar el callback para actualizar MyApp
-                    widget.onThemeChanged?.call(theme);
-                    // Guardar en preferencias
-                    PreferencesService.setSelectedTheme(theme);
-                    Navigator.pop(dialogContext);
-                    // Mostrar snackbar
-                    Future.delayed(const Duration(milliseconds: 300), () {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('theme_changed'.tr()),
-                          ),
-                        );
-                      }
-                    });
+                  onTap: () async {
+                    setState(() => _selectedTheme = theme);
+                    await PreferencesService.setSelectedTheme(theme);
+                    await _persistTeamTheme(theme);
+                    if (mounted) {
+                      Navigator.pop(dialogContext);
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('theme_changed'.tr()),
+                            ),
+                          );
+                        }
+                      });
+                    }
                   },
                 ),
             ],
@@ -273,6 +321,23 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
         ],
       ),
     );
+  }
+
+  Future<void> _persistTeamTheme(ThemeOption theme) async {
+    final teamId = _teamId;
+    if (teamId == null || teamId.isEmpty) return;
+    try {
+      await FirebaseFirestore.instance.collection('teams').doc(teamId).set({
+        'theme': theme.name,
+        'themeUpdatedAt': FieldValue.serverTimestamp(),
+        'themeUpdatedBy': FirebaseAuth.instance.currentUser?.uid,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el tema del equipo: $e')),
+      );
+    }
   }
 
   void _showLanguageDialog(BuildContext context) {

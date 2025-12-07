@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ----------------- users -----------------
+    // ----------------- USERS -----------------
     match /users/{userId} {
       // Crear al registrarse
       allow create: if request.auth != null && request.auth.uid == userId;
@@ -11,22 +11,26 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // ----------------- teams -----------------
+    // ----------------- TEAMS -----------------
     match /teams/{teamId} {
 
-      // Cualquiera autenticado puede leer info del equipo
+      // Cualquiera autenticado puede leer información general del equipo
       allow read: if request.auth != null;
 
       // Crear equipo → ownerId debe ser UID del entrenador
       allow create: if request.auth != null &&
         request.resource.data.ownerId == request.auth.uid;
 
-      // Actualizar / borrar equipo → solo owner
-      allow update, delete: if request.auth != null &&
-        get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId == request.auth.uid;
+      // Actualizar / borrar equipo → owner o cualquier entrenador del equipo
+      allow update, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/teams/$(teamId)).data.ownerId == request.auth.uid ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId
+        )
+      );
 
-
-      // -------- players --------
+      // -------- PLAYERS --------
       match /players/{playerId} {
 
         // Leer: jugadores y entrenadores del equipo
@@ -35,17 +39,17 @@ service cloud.firestore {
 
         // Crear:
         // - Entrenador del equipo crea jugadores
-        // - Jugador crea su doc cuando entra al equipo
+        // - Jugador crea su propio doc cuando se añade al equipo
         allow create: if request.auth != null && (
-            (
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
-              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId
-            ) ||
-            (
-              request.auth.uid == playerId &&
-              request.resource.data.role == "jugador" &&
-              request.resource.data.teamId == teamId
-            )
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId
+          ) ||
+          (
+            request.auth.uid == playerId &&
+            request.resource.data.role == "jugador" &&
+            request.resource.data.teamId == teamId
+          )
         );
 
         // Actualizar / eliminar → solo entrenador del equipo
@@ -54,8 +58,20 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
       }
 
+      // -------- SANCTIONS --------
+      match /sanctions/{sanctionId} {
 
-      // -------- matches --------
+        // Leer → cualquier miembro del equipo
+        allow read: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+
+        // Crear / actualizar / borrar → entrenadores del equipo
+        allow create, update, delete: if request.auth != null &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
+      }
+
+      // -------- MATCHES --------
       match /matches/{matchId} {
 
         // Leer → todos los miembros del equipo
@@ -67,8 +83,7 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "entrenador" &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId == teamId;
 
-
-        // -------- ESTADÍSTICAS POR PARTIDO --------
+        // -------- STATS POR PARTIDO --------
         match /stats/{statId} {
 
           // Leer → jugadores/entrenador del equipo
@@ -95,7 +110,7 @@ service cloud.firestore {
         }
       }
 
-      // -------- trainings (entrenamientos) --------
+      // -------- TRAININGS --------
       match /trainings/{trainingId} {
 
         // Leer → todos los miembros del equipo

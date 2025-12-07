@@ -148,7 +148,24 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
     });
   }
 
+  void _pruneSanctionedPlayers(Set<String> sanctionedIds) {
+    if (sanctionedIds.isEmpty) return;
+    final toRemove = _markers.keys.where(sanctionedIds.contains).toList();
+    if (toRemove.isEmpty) return;
+    setState(() {
+      for (final id in toRemove) {
+        _markers.remove(id);
+      }
+    });
+  }
+
   void _addPlayerToField(PlayerInfo player) {
+    if (player.isSanctioned) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${player.name} tiene una sanción activa y no puede alinearse.')),
+      );
+      return;
+    }
     if (_markers.containsKey(player.id)) return;
     final slotIndex = math.min(_markers.length, _defaultSlots.length - 1);
     setState(() {
@@ -215,6 +232,20 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final sanctionsStream = FirebaseFirestore.instance
+        .collection('teams')
+        .doc(widget.teamId)
+        .collection('sanctions')
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
+
+    final playersStream = FirebaseFirestore.instance
+        .collection('teams')
+        .doc(widget.teamId)
+        .collection('players')
+        .orderBy('name')
+        .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alineacion interactiva'),
@@ -230,72 +261,91 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('teams')
-            .doc(widget.teamId)
-            .collection('players')
-            .orderBy('name')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+        stream: sanctionsStream,
+        builder: (context, sanctionsSnapshot) {
+          if (sanctionsSnapshot.hasError) {
+            return Center(child: Text('Error cargando sanciones: ${sanctionsSnapshot.error}'));
           }
 
-          final players = snapshot.data!.docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final role = (data['role'] as String?)?.toLowerCase();
-            final isCoach = (data['isCoach'] as bool?) ?? false;
-            if (role == 'entrenador' || role == 'coach' || isCoach) {
-              return null;
+          final sanctionedIds = <String>{};
+          if (sanctionsSnapshot.hasData) {
+            for (final doc in sanctionsSnapshot.data!.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final pid = data['playerId'] as String?;
+              if (pid != null && pid.isNotEmpty) {
+                sanctionedIds.add(pid);
+              }
             }
-            return PlayerInfo(
-              id: doc.id,
-              name: data['name'] as String? ?? 'Jugador',
-              number: (data['dorsal'] as num?)?.toInt(),
-              position: data['posicion'] as String?,
-            );
-          }).whereType<PlayerInfo>().toList();
+          }
 
-          final benchPlayers = players.where((p) => !_markers.containsKey(p.id)).toList();
+          return StreamBuilder<QuerySnapshot>(
+            stream: playersStream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _pruneMissingPlayers(players.map((p) => p.id).toSet());
-          });
+              final players = snapshot.data!.docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final role = (data['role'] as String?)?.toLowerCase();
+                final isCoach = (data['isCoach'] as bool?) ?? false;
+                if (role == 'entrenador' || role == 'coach' || isCoach) {
+                  return null;
+                }
+                final isSanctioned = sanctionedIds.contains(doc.id);
+                return PlayerInfo(
+                  id: doc.id,
+                  name: data['name'] as String? ?? 'Jugador',
+                  number: (data['dorsal'] as num?)?.toInt(),
+                  position: data['posicion'] as String?,
+                  isSanctioned: isSanctioned,
+                );
+              }).whereType<PlayerInfo>().toList();
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _loadingLineup
-                    ? const LinearProgressIndicator(minHeight: 2)
-                    : const SizedBox(height: 2),
-                if (_loadError != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(_loadError!, style: const TextStyle(color: Colors.red)),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                _buildInstructionCard(),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildPitch()),
-                      const SizedBox(height: 16),
-                      _buildBench(benchPlayers, players),
+              final benchPlayers = players.where((p) => !_markers.containsKey(p.id)).toList();
+              final eligiblePlayers = players.where((p) => !p.isSanctioned).toList();
+
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                _pruneMissingPlayers(players.map((p) => p.id).toSet());
+                _pruneSanctionedPlayers(sanctionedIds);
+              });
+
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _loadingLineup
+                        ? const LinearProgressIndicator(minHeight: 2)
+                        : const SizedBox(height: 2),
+                    if (_loadError != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(_loadError!, style: const TextStyle(color: Colors.red)),
+                      ),
                     ],
-                  ),
+                    const SizedBox(height: 12),
+                    _buildInstructionCard(),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Expanded(child: _buildPitch()),
+                          const SizedBox(height: 16),
+                          _buildBench(benchPlayers, eligiblePlayers),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -351,7 +401,7 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
     );
   }
 
-  Widget _buildBench(List<PlayerInfo> benchPlayers, List<PlayerInfo> allPlayers) {
+  Widget _buildBench(List<PlayerInfo> benchPlayers, List<PlayerInfo> eligiblePlayers) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -366,7 +416,7 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
             ),
             IconButton(
               tooltip: 'Auto 2-2-1 con primeros jugadores',
-              onPressed: allPlayers.isEmpty ? null : () => _autoDistribute(allPlayers),
+              onPressed: eligiblePlayers.isEmpty ? null : () => _autoDistribute(eligiblePlayers),
               icon: const Icon(Icons.auto_fix_high),
             ),
           ],
@@ -399,8 +449,11 @@ class _LineupBuilderPageState extends State<LineupBuilderPage> {
                         style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    label: Text(player.displayName),
-                    onPressed: () => _addPlayerToField(player),
+                    label: Text(
+                      player.isSanctioned ? '${player.displayName} (Sancionado)' : player.displayName,
+                    ),
+                    tooltip: player.isSanctioned ? 'Tiene sanción activa' : null,
+                    onPressed: player.isSanctioned ? null : () => _addPlayerToField(player),
                   );
                 }).toList(),
               ),
@@ -445,8 +498,15 @@ class PlayerInfo {
   final String name;
   final int? number;
   final String? position;
+  final bool isSanctioned;
 
-  const PlayerInfo({required this.id, required this.name, this.number, this.position});
+  const PlayerInfo({
+    required this.id,
+    required this.name,
+    this.number,
+    this.position,
+    this.isSanctioned = false,
+  });
 
   String get displayName => number == null ? name : '#${number!} $name';
   String get initials {

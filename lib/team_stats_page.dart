@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'theme/app_themes.dart';
 
 class TeamStatsPage extends StatelessWidget {
   final String teamId;
@@ -71,11 +72,7 @@ class TeamStatsPage extends StatelessWidget {
                 // Resumen general - Totales
                 Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.85)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: context.primaryGradient,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -154,7 +151,10 @@ class TeamStatsPage extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.green[700]!, Colors.green[600]!],
+                      colors: [
+                        Theme.of(context).colorScheme.secondary,
+                        Theme.of(context).colorScheme.secondary.withOpacity(0.85),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -261,28 +261,28 @@ class _StatBoxTotal extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: color.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color.withOpacity(0.5),
+            color: Colors.white.withOpacity(0.35),
             width: 1.5,
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 24, color: color),
+            Icon(icon, size: 24, color: Colors.white),
             const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Colors.white,
               ),
             ),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: Colors.white),
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
               textAlign: TextAlign.center,
             ),
           ],
@@ -310,10 +310,10 @@ class _StatBoxPromedio extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: color.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: color.withOpacity(0.5),
+            color: Colors.white.withOpacity(0.35),
             width: 1.5,
           ),
         ),
@@ -324,12 +324,12 @@ class _StatBoxPromedio extends StatelessWidget {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Colors.white,
               ),
             ),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: Colors.white),
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
               textAlign: TextAlign.center,
             ),
           ],

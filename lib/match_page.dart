@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'create_match_page.dart';
 import 'match_stats_editor.dart';
 import 'match_availability_page.dart';
-import 'theme/app_colors.dart';
+import 'lineup_builder_page.dart';
+import 'theme/app_themes.dart';
 
 class MatchesPage extends StatelessWidget {
   final String teamId;
@@ -20,6 +21,18 @@ class MatchesPage extends StatelessWidget {
       );
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primary = colorScheme.primary;
+    final primaryDark = context.primaryDarkColor;
+    final onPrimary = colorScheme.onPrimary;
+    final textPrimary = theme.textTheme.bodyLarge?.color ?? Colors.black87;
+    final textSecondary = theme.textTheme.bodyMedium?.color ?? Colors.black54;
+    final outline = colorScheme.outline;
+    final surface = colorScheme.surface;
+    final accent = colorScheme.secondary;
+    final errorColor = colorScheme.error;
+
     final matchesStream = FirebaseFirestore.instance
         .collection("teams")
         .doc(teamId)
@@ -29,12 +42,15 @@ class MatchesPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Gestión de partidos", style: TextStyle(color: AppColors.textOnPrimary, fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.primary,
+        title: Text(
+          "Gestión de partidos",
+          style: TextStyle(color: onPrimary, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: primary,
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.primaryGradient,
+          decoration: BoxDecoration(
+            gradient: context.primaryGradient,
           ),
         ),
       ),
@@ -49,9 +65,9 @@ class MatchesPage extends StatelessWidget {
           if (role.toLowerCase() != 'entrenador') return const SizedBox.shrink();
           
           return FloatingActionButton(
-            backgroundColor: AppColors.primary,
+            backgroundColor: primary,
             elevation: 6,
-            child: const Icon(Icons.add, color: AppColors.textOnPrimary, size: 28),
+            child: Icon(Icons.add, color: onPrimary, size: 28),
             onPressed: () {
               Navigator.push(
                 context,
@@ -77,10 +93,14 @@ class MatchesPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             itemCount: matches.length,
             itemBuilder: (context, index) {
-              final match = matches[index].data() as Map<String, dynamic>;
+              final matchDoc = matches[index];
+              final match = matchDoc.data() as Map<String, dynamic>;
+              final matchId = matchDoc.id;
+              final matchRef = matchDoc.reference;
               final teamA = match["teamA"] ?? "Desconocido";
               final teamB = match["teamB"] ?? "Desconocido";
               final date = (match["date"] as Timestamp?)?.toDate();
+              final matchNote = (match['note'] ?? '').toString().trim();
 
               final formattedDate = date != null
                   ? "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}"
@@ -91,18 +111,18 @@ class MatchesPage extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 elevation: 4,
-                shadowColor: isPlayed ? AppColors.matchPlayed.withOpacity(0.3) : AppColors.matchColor.withOpacity(0.3),
+                shadowColor: (isPlayed ? outline : primary).withOpacity(0.25),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Container(
                   decoration: BoxDecoration(
-                    gradient: isPlayed 
+                    gradient: isPlayed
                         ? LinearGradient(
-                            colors: [AppColors.matchPlayed.withOpacity(0.08), AppColors.surface],
+                            colors: [outline.withOpacity(0.15), surface],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           )
                         : LinearGradient(
-                            colors: [AppColors.matchColor.withOpacity(0.08), AppColors.primaryLight.withOpacity(0.05)],
+                            colors: [primary.withOpacity(0.08), primary.withOpacity(0.02)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -114,24 +134,24 @@ class MatchesPage extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        gradient: isPlayed ? null : AppColors.matchGradient,
-                        color: isPlayed ? AppColors.matchPlayed : null,
+                        gradient: isPlayed ? null : context.primaryGradient,
+                        color: isPlayed ? outline : null,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: isPlayed ? AppColors.matchPlayed.withOpacity(0.3) : AppColors.matchColor.withOpacity(0.3),
+                            color: (isPlayed ? outline : primary).withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.sports_soccer, color: AppColors.textOnPrimary, size: 28),
+                      child: Icon(Icons.sports_soccer, color: isPlayed ? primary : onPrimary, size: 26),
                     ),
                     title: Text(
                       "$teamA vs $teamB", 
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: isPlayed ? AppColors.textSecondary : AppColors.textPrimary,
+                        color: isPlayed ? textSecondary : textPrimary,
                         fontSize: 16,
                       ),
                     ),
@@ -141,10 +161,14 @@ class MatchesPage extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
+                            Icon(Icons.calendar_today, size: 14, color: textSecondary),
                             const SizedBox(width: 4),
                             Flexible(
-                              child: Text(formattedDate, style: TextStyle(color: AppColors.textSecondary, fontSize: 13), overflow: TextOverflow.ellipsis),
+                              child: Text(
+                                formattedDate,
+                                style: TextStyle(color: textSecondary, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -155,18 +179,18 @@ class MatchesPage extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.matchPlayed.withOpacity(0.2),
+                                  color: primary.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.emoji_events, size: 16, color: AppColors.goals),
+                                    Icon(Icons.emoji_events, size: 16, color: primaryDark),
                                     const SizedBox(width: 6),
                                     Text(
                                       '${match['golesTeamA'] ?? 0} - ${match['golesTeamB'] ?? 0}',
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
+                                      style: TextStyle(
+                                        color: textPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -177,11 +201,175 @@ class MatchesPage extends StatelessWidget {
                             ],
                           ),
                         ],
+                        if (matchNote.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.note_alt_outlined, size: 16, color: accent),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  matchNote,
+                                  style: TextStyle(color: textSecondary, fontStyle: FontStyle.italic),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser?.uid)
+                              .snapshots(),
+                          builder: (context, userSnap) {
+                            final isCoach = userSnap.hasData &&
+                                (userSnap.data!.data() as Map<String, dynamic>?)?['role']?.toString().toLowerCase() == 'entrenador';
+
+                            return Wrap(
+                              spacing: 10,
+                              runSpacing: 8,
+                              children: [
+                                _matchActionChip(
+                                  context: context,
+                                  icon: Icons.people,
+                                  tooltip: 'Convocatorias y disponibilidad',
+                                  color: primary,
+                                  onTap: () {
+                                    if (!context.mounted) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MatchAvailabilityPage(
+                                          teamId: teamId,
+                                          matchId: matchId,
+                                          isCoach: isCoach,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                if (isCoach)
+                                  _matchActionChip(
+                                    context: context,
+                                    icon: Icons.stacked_bar_chart,
+                                    tooltip: 'Estadísticas',
+                                    color: accent,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => MatchStatsEditor(teamId: teamId, matchId: matchId),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                if (isCoach)
+                                  _matchActionChip(
+                                    context: context,
+                                    icon: Icons.sports_soccer_outlined,
+                                    tooltip: 'Formaciones',
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => LineupBuilderPage(teamId: teamId, matchId: matchId),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                if (isCoach)
+                                  _matchActionChip(
+                                    context: context,
+                                    icon: Icons.note_alt_outlined,
+                                    tooltip: 'Anotaciones del partido',
+                                    color: accent,
+                                    onTap: () => _showMatchNoteEditor(context, matchRef, matchNote),
+                                  ),
+                                if (isCoach)
+                                  _matchActionChip(
+                                    context: context,
+                                    icon: Icons.delete_forever,
+                                    tooltip: 'Eliminar partido',
+                                    color: errorColor,
+                                    onTap: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Eliminar partido'),
+                                          content: const Text('¿Eliminar este partido del historial? Esta acción puede revertir estadísticas agregadas.'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm != true) return;
+
+                                      try {
+                                        final aggregated = (match['aggregated'] ?? false) as bool;
+
+                                        if (aggregated) {
+                                          final statsSnap = await matchRef.collection('stats').get();
+                                          final batch = FirebaseFirestore.instance.batch();
+                                          for (final s in statsSnap.docs) {
+                                            final sd = s.data();
+                                            final pid = s.id;
+                                            final goles = (sd['goles'] ?? 0) as int;
+                                            final asist = (sd['asistencias'] ?? 0) as int;
+                                            final minutos = (sd['minutos'] ?? 0) as int;
+                                            final amar = (sd['amarillas'] ?? 0) as int;
+                                            final roj = (sd['rojas'] ?? 0) as int;
+                                            final convocado = (sd['convocado'] ?? true) as bool;
+                                            if (!convocado) continue;
+
+                                            final playerRef = FirebaseFirestore.instance
+                                                .collection('teams')
+                                                .doc(teamId)
+                                                .collection('players')
+                                                .doc(pid);
+                                            batch.set(playerRef, {
+                                              'goles': FieldValue.increment(-goles),
+                                              'asistencias': FieldValue.increment(-asist),
+                                              'minutos': FieldValue.increment(-minutos),
+                                              'partidos': FieldValue.increment(-(minutos > 0 ? 1 : 0)),
+                                              'tarjetas_amarillas': FieldValue.increment(-amar),
+                                              'tarjetas_rojas': FieldValue.increment(-roj),
+                                            }, SetOptions(merge: true));
+                                          }
+                                          await batch.commit();
+                                        }
+
+                                        final statsToDelete = await matchRef.collection('stats').get();
+                                        final batchDel = FirebaseFirestore.instance.batch();
+                                        for (final s in statsToDelete.docs) {
+                                          batchDel.delete(s.reference);
+                                        }
+                                        await batchDel.commit();
+                                        await matchRef.delete();
+
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(content: Text('Partido eliminado')));
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(SnackBar(content: Text('Error eliminando: $e')));
+                                        }
+                                      }
+                                    },
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                   onTap: () async {
                     // Abrir diálogo para editar resultado/marcar jugado
-                    final docRef = snapshot.data!.docs[index].reference;
+                    final docRef = matchRef;
                     final gA = (match['golesTeamA'] ?? 0).toString();
                     final gB = (match['golesTeamB'] ?? 0).toString();
                     bool played = (match['played'] ?? false) as bool;
@@ -202,7 +390,7 @@ class MatchesPage extends StatelessWidget {
                                     value: played,
                                     onChanged: (v) => setState(() => played = v),
                                     title: const Text('Marcado como jugado'),
-                                    activeColor: AppColors.primary,
+                                    activeColor: primary,
                                   ),
                                   if (played) ...[
                                     TextField(controller: aController, decoration: const InputDecoration(labelText: 'Goles Equipo A'), keyboardType: TextInputType.number),
@@ -280,142 +468,6 @@ class MatchesPage extends StatelessWidget {
                     aController.dispose();
                     bController.dispose();
                   },
-                  trailing: StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(FirebaseAuth.instance.currentUser?.uid)
-                        .snapshots(),
-                    builder: (context, userSnap) {
-                      final isCoach = userSnap.hasData &&
-                          (userSnap.data!.data() as Map<String, dynamic>?)?['role']?.toString().toLowerCase() == 'entrenador';
-
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                        IconButton(
-                          icon: const Icon(Icons.people),
-                          iconSize: 20,
-                          padding: const EdgeInsets.all(8),
-                          constraints: const BoxConstraints(),
-                          tooltip: 'Convocatorias y disponibilidad',
-                          onPressed: () async {
-                              final matchId = snapshot.data!.docs[index].id;
-                              // Determinar si el usuario actual es coach
-                              final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                              bool isCoachCheck = false;
-                              if (currentUserId != null) {
-                                try {
-                                  final teamDoc = await FirebaseFirestore.instance.collection('teams').doc(teamId).get();
-                                  final coachId = teamDoc.data()?['coachId'] as String?;
-                                  isCoachCheck = (coachId == currentUserId);
-                                } catch (_) {}
-                              }
-                              if (context.mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MatchAvailabilityPage(
-                                      teamId: teamId,
-                                      matchId: matchId,
-                                      isCoach: isCoach,
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                          if (isCoach) ...[
-                            IconButton(
-                              icon: const Icon(Icons.stacked_bar_chart),
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Estadísticas',
-                              onPressed: () {
-                                final matchId = snapshot.data!.docs[index].id;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MatchStatsEditor(teamId: teamId, matchId: matchId),
-                                  ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_forever, color: AppColors.error),
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints(),
-                              tooltip: 'Eliminar partido',
-                              onPressed: () async {
-                          final matchRef = snapshot.data!.docs[index].reference;
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Eliminar partido'),
-                              content: const Text('¿Eliminar este partido del historial? Esta acción puede revertir estadísticas agregadas.'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
-                              ],
-                            ),
-                          );
-                          if (confirm != true) return;
-
-                          try {
-                            final matchData = (snapshot.data!.docs[index].data() as Map<String, dynamic>);
-                            final aggregated = (matchData['aggregated'] ?? false) as bool;
-
-                            if (aggregated) {
-                              final statsSnap = await matchRef.collection('stats').get();
-                              final batch = FirebaseFirestore.instance.batch();
-                              for (final s in statsSnap.docs) {
-                                final sd = s.data();
-                                final pid = s.id;
-                                final goles = (sd['goles'] ?? 0) as int;
-                                final asist = (sd['asistencias'] ?? 0) as int;
-                                final minutos = (sd['minutos'] ?? 0) as int;
-                                final amar = (sd['amarillas'] ?? 0) as int;
-                                final roj = (sd['rojas'] ?? 0) as int;
-                                final convocado = (sd['convocado'] ?? true) as bool;
-                                if (!convocado) continue;
-
-                                final playerRef = FirebaseFirestore.instance.collection('teams').doc(teamId).collection('players').doc(pid);
-                                batch.set(playerRef, {
-                                  'goles': FieldValue.increment(-goles),
-                                  'asistencias': FieldValue.increment(-asist),
-                                  'minutos': FieldValue.increment(-minutos),
-                                  'partidos': FieldValue.increment(- (minutos > 0 ? 1 : 0)),
-                                  'tarjetas_amarillas': FieldValue.increment(-amar),
-                                  'tarjetas_rojas': FieldValue.increment(-roj),
-                                }, SetOptions(merge: true));
-                              }
-                              await batch.commit();
-                            }
-
-                            final statsToDelete = await matchRef.collection('stats').get();
-                            final batchDel = FirebaseFirestore.instance.batch();
-                            for (final s in statsToDelete.docs) {
-                              batchDel.delete(s.reference);
-                            }
-                            await batchDel.commit();
-                            await matchRef.delete();
-
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Partido eliminado')));
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error eliminando: $e')));
-                            }
-                          }
-                        },
-                      ),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
                   ),
                 ),
               );
@@ -424,5 +476,107 @@ class MatchesPage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Widget _matchActionChip({
+    required BuildContext context,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final resolvedColor = color ?? Theme.of(context).colorScheme.primary;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: resolvedColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: resolvedColor, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMatchNoteEditor(
+    BuildContext context,
+    DocumentReference matchRef,
+    String currentNote,
+  ) async {
+    final controller = TextEditingController(text: currentNote);
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Anotaciones del partido',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'Ej. Llegar 30 min antes, traer identificación...',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.pop(sheetCtx, ''),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Limpiar nota'),
+                      ),
+                      const Spacer(),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetCtx, controller.text.trim()),
+                        child: const Text('Guardar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (result == null) return;
+
+    try {
+      await matchRef.update({
+        'note': result,
+        'noteUpdatedAt': FieldValue.serverTimestamp(),
+        'noteUpdatedBy': FirebaseAuth.instance.currentUser?.uid,
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Anotaciones actualizadas')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudieron guardar las notas: $e')),
+      );
+    }
   }
 }

@@ -149,7 +149,7 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
           .collection('matches')
           .doc(widget.matchId);
       final matchSnap = await matchRef.get();
-      final matchData = matchSnap.data() as Map<String, dynamic>? ?? {};
+      final matchData = matchSnap.data() ?? <String, dynamic>{};
       final played = (matchData['played'] ?? false) as bool;
       final aggregated = (matchData['aggregated'] ?? false) as bool;
       if (!played || aggregated) return;
@@ -375,7 +375,7 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildCardSelector(playerId, amarillas, rojas),
+                      child: _buildCardSelector(playerId, playerName, amarillas, rojas),
                     ),
                   ],
                 ),
@@ -454,7 +454,7 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
     );
   }
 
-  Widget _buildCardSelector(String playerId, int amarillas, int rojas) {
+  Widget _buildCardSelector(String playerId, String playerName, int amarillas, int rojas) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -484,12 +484,26 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _updateStat(playerId, 'amarillas', amarillas + 1),
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: amarillas > 0
+                              ? () => _updateStat(playerId, 'amarillas', (amarillas - 1).clamp(0, 999))
+                              : null,
+                          iconSize: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _updateStat(playerId, 'amarillas', amarillas + 1),
+                          iconSize: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -511,12 +525,26 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () => _updateStat(playerId, 'rojas', rojas + 1),
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: rojas > 0
+                              ? () => _onRemoveRedCard(playerId, playerName, (rojas - 1).clamp(0, 999))
+                              : null,
+                          iconSize: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => _onAddRedCard(playerId, playerName, rojas + 1),
+                          iconSize: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -572,6 +600,79 @@ class _MatchStatsEditorState extends State<MatchStatsEditor> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
       }
     });
+  }
+
+  Future<void> _onAddRedCard(String playerId, String playerName, int newValue) async {
+    await _registerRedCardSanction(playerId, playerName);
+    _updateStat(playerId, 'rojas', newValue);
+  }
+
+  Future<void> _onRemoveRedCard(String playerId, String playerName, int newValue) async {
+    await _removeRedCardSanction(playerId, playerName);
+    _updateStat(playerId, 'rojas', newValue < 0 ? 0 : newValue);
+  }
+
+  Future<void> _registerRedCardSanction(String playerId, String playerName) async {
+    try {
+      final teamRef = FirebaseFirestore.instance.collection('teams').doc(widget.teamId);
+      final sanctionsRef = teamRef.collection('sanctions');
+      final existing = await sanctionsRef
+          .where('playerId', isEqualTo: playerId)
+          .where('matchId', isEqualTo: widget.matchId)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) return;
+
+      final matchSnap = await teamRef.collection('matches').doc(widget.matchId).get();
+      final matchData = matchSnap.data() ?? <String, dynamic>{};
+
+      await sanctionsRef.add({
+        'playerId': playerId,
+        'playerName': playerName,
+        'matchId': widget.matchId,
+        'matchDate': matchData['date'],
+        'opponent': matchData['teamB'] ?? matchData['rival'] ?? matchData['opponent'] ?? '',
+        'status': 'pending',
+        'reason': 'Tarjeta roja',
+        'notes': matchData['note'],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sanción registrada para $playerName')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error registrando sanción: $e')),
+      );
+    }
+  }
+
+  Future<void> _removeRedCardSanction(String playerId, String playerName) async {
+    try {
+      final teamRef = FirebaseFirestore.instance.collection('teams').doc(widget.teamId);
+      final sanctionsRef = teamRef.collection('sanctions');
+      final existing = await sanctionsRef
+          .where('playerId', isEqualTo: playerId)
+          .where('matchId', isEqualTo: widget.matchId)
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+      if (existing.docs.isEmpty) return;
+      await existing.docs.first.reference.delete();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sanción eliminada para $playerName')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo eliminar la sanción: $e')),
+      );
+    }
   }
 
   void _toggleTitular(String playerId, bool isTitular) {

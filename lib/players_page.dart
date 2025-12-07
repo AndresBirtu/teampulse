@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_player_page.dart';
 
 class PlayersPage extends StatefulWidget {
@@ -14,6 +15,167 @@ class PlayersPage extends StatefulWidget {
 class _PlayersPageState extends State<PlayersPage> {
   String _sortBy = 'name'; // 'name', 'name-desc', 'position'
   String _filterPosition = ''; // '' = no filter
+  bool _isCoach = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final role = (snapshot.data()?['role'] as String?)?.toLowerCase() ?? '';
+      if (!mounted) return;
+      setState(() {
+        _isCoach = role == 'entrenador' || role == 'coach';
+      });
+    } catch (_) {
+      // Ignorar, el botón simplemente no aparecerá
+    }
+  }
+
+  Future<void> _markSanctionServed(String sanctionId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .collection('sanctions')
+          .doc(sanctionId)
+          .update({
+        'status': 'served',
+        'resolvedAt': FieldValue.serverTimestamp(),
+        'resolvedBy': FirebaseAuth.instance.currentUser?.uid,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sanción marcada como cumplida')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo actualizar la sanción: $e')),
+      );
+    }
+  }
+
+  void _confirmServeSanction(String sanctionId, String playerName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Marcar sanción cumplida'),
+        content: Text('Confirmas que $playerName ya cumplió su sanción?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _markSanctionServed(sanctionId);
+            },
+            child: const Text('Marcar cumplida'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSanctionsPanel(List<QueryDocumentSnapshot> docs) {
+    if (docs.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      color: colorScheme.errorContainer,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.gavel, color: colorScheme.onErrorContainer),
+                const SizedBox(width: 8),
+                Text(
+                  'Sanciones activas (${docs.length})',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final playerName = data['playerName'] ?? 'Jugador';
+              final opponent = data['opponent'] ?? 'Rival';
+              final reason = data['reason'] ?? 'Tarjeta roja';
+              final note = (data['notes'] ?? '').toString();
+              final matchDate = (data['matchDate'] as Timestamp?)?.toDate();
+              final dateText = matchDate != null
+                  ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
+                  : 'Fecha pendiente';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playerName,
+                      style: TextStyle(
+                        color: colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '$reason vs $opponent · $dateText',
+                      style: TextStyle(
+                        color: colorScheme.onErrorContainer,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (note.isNotEmpty)
+                      Text(
+                        'Nota: $note',
+                        style: TextStyle(
+                          color: colorScheme.onErrorContainer,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    if (_isCoach)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            foregroundColor: colorScheme.onErrorContainer,
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Marcar cumplida'),
+                          onPressed: () => _confirmServeSanction(doc.id, playerName),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showInjuryDialog(BuildContext context, String playerId, Map<String, dynamic> playerData, String playerName) {
     final isCurrentlyInjured = playerData['injured'] == true;
@@ -145,6 +307,13 @@ class _PlayersPageState extends State<PlayersPage> {
         .collection('players')
         .snapshots();
 
+    final sanctionsStream = FirebaseFirestore.instance
+        .collection('teams')
+        .doc(widget.teamId)
+        .collection('sanctions')
+        .where('status', isEqualTo: 'pending')
+        .snapshots();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Jugadores del equipo"),
@@ -152,8 +321,25 @@ class _PlayersPageState extends State<PlayersPage> {
         elevation: 2,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: playersStream,
-        builder: (context, snapshot) {
+        stream: sanctionsStream,
+        builder: (context, sanctionsSnapshot) {
+          if (sanctionsSnapshot.hasError) {
+            return Center(child: Text('Error cargando sanciones: ${sanctionsSnapshot.error}'));
+          }
+
+          final sanctionDocs = sanctionsSnapshot.data?.docs ?? [];
+          final playerSanctions = <String, QueryDocumentSnapshot>{};
+          for (final doc in sanctionDocs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final playerId = data['playerId'] as String?;
+            if (playerId != null && playerId.isNotEmpty) {
+              playerSanctions[playerId] = doc;
+            }
+          }
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: playersStream,
+            builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -168,9 +354,15 @@ class _PlayersPageState extends State<PlayersPage> {
             return !isCoach && role?.toLowerCase() != 'entrenador' && role?.toLowerCase() != 'coach';
           }).toList();
           
-          // Separate injured players
+          // Separate injured and sanctioned players
           final injuredPlayers = players.where((p) => (p.data() as Map<String, dynamic>)['injured'] == true).toList();
-          final activePlayers = players.where((p) => (p.data() as Map<String, dynamic>)['injured'] != true).toList();
+          final sanctionedPlayers = players.where((p) => playerSanctions.containsKey(p.id)).toList();
+          final availablePlayers = players.where((p) {
+            final data = p.data() as Map<String, dynamic>;
+            final injured = data['injured'] == true;
+            final sanctioned = playerSanctions.containsKey(p.id);
+            return !injured && !sanctioned;
+          }).toList();
 
           // Filtrar por posición si hay filtro activo
           if (_filterPosition.isNotEmpty) {
@@ -203,12 +395,18 @@ class _PlayersPageState extends State<PlayersPage> {
           }
           return Column(
             children: [
+              _buildSanctionsPanel(sanctionDocs),
               // Controles de filtro y orden
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Disponibles: ${availablePlayers.length} · Lesionados: ${injuredPlayers.length} · Sancionados: ${sanctionedPlayers.length}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 12),
                     const Text('Ordenar por:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     const SizedBox(height: 8),
                     Container(
@@ -321,11 +519,20 @@ class _PlayersPageState extends State<PlayersPage> {
                     final initials = name.split(' ').map((s) => s.isNotEmpty ? s[0] : '').take(2).join();
                     final isInjured = playerData['injured'] == true;
                     final injuryReturnDate = (playerData['injuryReturnDate'] as Timestamp?)?.toDate();
+                    final sanctionDoc = playerSanctions[player.id];
+                    final isSanctioned = sanctionDoc != null;
+                    final sanctionData = sanctionDoc?.data() as Map<String, dynamic>?;
+                    final sanctionOpponent = sanctionData?['opponent'] ?? 'Rival';
+                    final sanctionId = sanctionDoc?.id;
                     
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 2,
-                      color: isInjured ? Colors.red.shade50 : null,
+                      color: isSanctioned
+                          ? Colors.orange.shade50
+                          : isInjured
+                              ? Colors.red.shade50
+                              : null,
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                         leading: Stack(
@@ -372,6 +579,25 @@ class _PlayersPageState extends State<PlayersPage> {
                                   'LESIONADO',
                                   style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
+                              )
+                            else if (isSanctioned)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.deepOrange,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.gavel, size: 12, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'SANCIONADO',
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
                               ),
                           ],
                         ),
@@ -394,6 +620,21 @@ class _PlayersPageState extends State<PlayersPage> {
                                   ),
                                 ],
                               ),
+                            ] else if (isSanctioned) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.gavel, size: 12, color: Colors.deepOrange),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      'Pendiente por roja vs $sanctionOpponent. No alineable hasta que el entrenador marque la sanción como cumplida.',
+                                      style: const TextStyle(color: Colors.deepOrange, fontSize: 11, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ],
                         ),
@@ -401,6 +642,18 @@ class _PlayersPageState extends State<PlayersPage> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (_isCoach && isSanctioned && sanctionId != null) ...[
+                              InkWell(
+                                borderRadius: BorderRadius.circular(24),
+                                onTap: () => _confirmServeSanction(sanctionId, name),
+                                child: CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.green.withOpacity(0.16),
+                                  child: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             InkWell(
                               borderRadius: BorderRadius.circular(24),
                               onTap: () => _showInjuryDialog(context, player.id, playerData, name),
@@ -443,6 +696,8 @@ class _PlayersPageState extends State<PlayersPage> {
                 ),
               ),
             ],
+          );
+            },
           );
         },
       ),

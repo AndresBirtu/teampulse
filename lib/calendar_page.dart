@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'match_page.dart' as match;
 import 'trainings_page.dart';
-import 'theme/app_colors.dart';
+import 'theme/app_themes.dart';
 
 class CalendarPage extends StatefulWidget {
   final String teamId;
@@ -117,11 +117,23 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primary = colorScheme.primary;
+    final secondary = colorScheme.secondary;
+    final onPrimary = colorScheme.onPrimary;
+    final textSecondary = theme.textTheme.bodySmall?.color ?? Colors.black54;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendario'),
-        backgroundColor: AppColors.primary,
-        elevation: 2,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: context.primaryGradient,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -150,27 +162,31 @@ class _CalendarPageState extends State<CalendarPage> {
                       formatButtonVisible: true,
                       titleCentered: true,
                       formatButtonShowsNext: false,
+                      titleTextStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold) ??
+                          TextStyle(color: primary, fontWeight: FontWeight.bold),
+                      leftChevronIcon: Icon(Icons.chevron_left, color: primary),
+                      rightChevronIcon: Icon(Icons.chevron_right, color: primary),
                       formatButtonDecoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: primary,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      formatButtonTextStyle: const TextStyle(color: AppColors.textOnPrimary),
+                      formatButtonTextStyle: TextStyle(color: onPrimary, fontWeight: FontWeight.w600),
                     ),
                     calendarStyle: CalendarStyle(
                       todayDecoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.6),
+                        color: secondary.withOpacity(0.25),
                         shape: BoxShape.circle,
                       ),
-                      selectedDecoration: const BoxDecoration(
-                        color: AppColors.primary,
+                      selectedDecoration: BoxDecoration(
+                        color: primary,
                         shape: BoxShape.circle,
                       ),
-                      markerDecoration: const BoxDecoration(
-                        color: AppColors.accent,
+                      markerDecoration: BoxDecoration(
+                        color: secondary,
                         shape: BoxShape.circle,
                       ),
                       markersMaxCount: 3,
-                      weekendTextStyle: TextStyle(color: AppColors.textSecondary),
+                      weekendTextStyle: TextStyle(color: textSecondary),
                     ),
                     onDaySelected: (selectedDay, focusedDay) {
                       if (!isSameDay(_selectedDay, selectedDay)) {
@@ -198,6 +214,14 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildEventsList() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primary = colorScheme.primary;
+    final secondary = colorScheme.secondary;
+    final onPrimary = colorScheme.onPrimary;
+    final textSecondary = theme.textTheme.bodySmall?.color ?? Colors.black54;
+    final successColor = Colors.green.shade600;
+
     if (_selectedDay == null) {
       return const Center(
         child: Text('Selecciona un día para ver eventos'),
@@ -215,7 +239,7 @@ class _CalendarPageState extends State<CalendarPage> {
             const SizedBox(height: 16),
             Text(
               'No hay eventos para este día',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+              style: TextStyle(color: textSecondary, fontSize: 16),
             ),
           ],
         ),
@@ -237,11 +261,17 @@ class _CalendarPageState extends State<CalendarPage> {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: isMatch ? AppColors.matchGradient : AppColors.trainingGradient,
+                gradient: isMatch
+                    ? context.primaryGradient
+                    : LinearGradient(
+                        colors: [secondary, secondary.withOpacity(0.7)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (isMatch ? AppColors.matchColor : AppColors.trainingColor).withOpacity(0.3),
+                    color: (isMatch ? primary : secondary).withOpacity(0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -249,46 +279,46 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
               child: Icon(
                 isMatch ? Icons.sports_soccer : Icons.fitness_center,
-                color: AppColors.textOnPrimary,
+                color: onPrimary,
                 size: 24,
               ),
             ),
             title: Text(
               event['title'],
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 14),
+                    Icon(Icons.access_time, size: 14, color: textSecondary),
                     const SizedBox(width: 4),
-                    Text(event['time']),
+                    Text(event['time'], style: theme.textTheme.bodySmall),
                   ],
                 ),
                 if (isMatch && event['played'] == true)
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.check_circle, size: 14, color: AppColors.success),
-                      SizedBox(width: 4),
-                      Text('Jugado', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
+                      Icon(Icons.check_circle, size: 14, color: successColor),
+                      const SizedBox(width: 4),
+                      Text('Jugado', style: TextStyle(color: successColor, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 if (!isMatch && event['location'] != null)
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 14),
+                      Icon(Icons.location_on, size: 14, color: textSecondary),
                       const SizedBox(width: 4),
-                      Text(event['location']),
+                      Text(event['location'], style: theme.textTheme.bodySmall),
                     ],
                   ),
               ],
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: AppColors.primary,
+              color: primary,
             ),
             onTap: () {
               if (isMatch) {

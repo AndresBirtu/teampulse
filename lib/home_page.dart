@@ -3,41 +3,95 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'forgotPassword_page.dart';
 import 'dashboard_page.dart';
+import 'theme/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  static final ThemeData _authTheme = ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      error: AppColors.error,
+      surface: AppColors.surface,
+      background: AppColors.background,
+    ),
+    primaryColor: AppColors.primary,
+    scaffoldBackgroundColor: AppColors.background,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.primary,
+      elevation: 2,
+      iconTheme: IconThemeData(color: AppColors.textOnPrimary),
+      titleTextStyle: TextStyle(
+        color: AppColors.textOnPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.primary,
+      foregroundColor: AppColors.textOnPrimary,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        elevation: 2,
+      ),
+    ),
+    textTheme: const TextTheme(
+      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+      bodyMedium: TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      bodySmall: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).primaryColor,
-          centerTitle: true,
-          title: const Text(
-            "TeamPulse",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+    return Theme(
+      data: _authTheme,
+      child: DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.primary,
+            centerTitle: true,
+            title: const Text(
+              "TeamPulse",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            bottom: const TabBar(
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
+              tabs: [
+                Tab(text: "Iniciar Sesión"),
+                Tab(text: "Registrarse"),
+              ],
             ),
           ),
-          bottom: const TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: "Iniciar Sesión"),
-              Tab(text: "Registrarse"),
+          body: const TabBarView(
+            children: [
+              _LoginTab(),
+              _RegisterTab(),
             ],
           ),
-        ),
-        body: const TabBarView(
-          children: [
-            _LoginTab(),
-            _RegisterTab(),
-          ],
         ),
       ),
     );

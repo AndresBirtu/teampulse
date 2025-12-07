@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+
+import 'services/preferences_service.dart';
 
 class PlayerProfilePage extends StatefulWidget {
   final String teamId;
@@ -67,6 +70,29 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
       }
+    }
+  }
+
+  Future<void> _changeLanguage(Locale locale) async {
+    if (!mounted) return;
+    try {
+      await context.setLocale(locale);
+      await PreferencesService.setSelectedLanguage(locale.languageCode);
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.playerId)
+          .set({'preferredLanguage': locale.languageCode}, SetOptions(merge: true));
+
+      if (!mounted) return;
+      final languageName = locale.languageCode == 'es' ? 'Español' : 'English';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Idioma cambiado a $languageName')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo actualizar el idioma: $e')),
+      );
     }
   }
 
@@ -220,6 +246,37 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      'Idioma de la aplicación',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.language),
+                    title: const Text('Español'),
+                    trailing: context.locale.languageCode == 'es'
+                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
+                        : null,
+                    onTap: () => _changeLanguage(const Locale('es')),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.language_outlined),
+                    title: const Text('English'),
+                    trailing: context.locale.languageCode == 'en'
+                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
+                        : null,
+                    onTap: () => _changeLanguage(const Locale('en')),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 32),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'theme/app_colors.dart';
+import 'theme/app_themes.dart';
 
 class FullStatsPage extends StatefulWidget {
   final String teamId;
@@ -21,6 +21,16 @@ class FullStatsPage extends StatefulWidget {
 }
 
 class _FullStatsPageState extends State<FullStatsPage> {
+  Color get _primaryColor => Theme.of(context).colorScheme.primary;
+  Color get _secondaryColor => Theme.of(context).colorScheme.secondary;
+  Color get _surfaceColor => Theme.of(context).colorScheme.surface;
+  Color get _backgroundColor => Theme.of(context).colorScheme.background;
+  Color get _textPrimaryColor => Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black87;
+  Color get _textSecondaryColor => Theme.of(context).textTheme.bodySmall?.color ?? Colors.black54;
+  Color get _tertiaryColor => Theme.of(context).colorScheme.tertiary ?? Theme.of(context).colorScheme.secondary;
+  Color get _errorColor => Theme.of(context).colorScheme.error;
+  LinearGradient get _primaryGradient => context.primaryGradient;
+
   @override
   Widget build(BuildContext context) {
     final playerStream = FirebaseFirestore.instance
@@ -35,12 +45,12 @@ class _FullStatsPageState extends State<FullStatsPage> {
         title: Text('Estadísticas: ${widget.playerName}'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: _primaryGradient,
           ),
         ),
         elevation: 0,
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: _backgroundColor,
       body: StreamBuilder<DocumentSnapshot>(
         stream: playerStream,
         builder: (context, snapshot) {
@@ -67,11 +77,11 @@ class _FullStatsPageState extends State<FullStatsPage> {
                     // Player header card
                     Container(
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
+                        gradient: _primaryGradient,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: _primaryColor.withOpacity(0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -151,7 +161,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
+            gradient: _primaryGradient,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: Colors.white, size: 20),
@@ -159,10 +169,10 @@ class _FullStatsPageState extends State<FullStatsPage> {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: _textPrimaryColor,
           ),
         ),
       ],
@@ -182,25 +192,25 @@ class _FullStatsPageState extends State<FullStatsPage> {
           'Goles',
           playerData['goles']?.toString() ?? '0',
           Icons.sports_soccer,
-          AppColors.primary,
+          _primaryColor,
         ),
         _buildStatCard(
           'Asistencias',
           playerData['asistencias']?.toString() ?? '0',
           Icons.emoji_events,
-          AppColors.secondary,
+          _secondaryColor,
         ),
         _buildStatCard(
           'Minutos',
           playerData['minutos']?.toString() ?? '0',
           Icons.timer,
-          Colors.blue,
+          _tertiaryColor,
         ),
         _buildStatCard(
           'Tarjetas',
           '${playerData['tarjetas_amarillas'] ?? 0}/${playerData['tarjetas_rojas'] ?? 0}',
           Icons.credit_card,
-          Colors.orange,
+          _errorColor,
         ),
       ],
     );
@@ -209,7 +219,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -236,9 +246,9 @@ class _FullStatsPageState extends State<FullStatsPage> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: _textSecondaryColor,
             ),
           ),
         ],
@@ -257,11 +267,11 @@ class _FullStatsPageState extends State<FullStatsPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
+            color: _primaryColor.withOpacity(0.12),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -273,14 +283,14 @@ class _FullStatsPageState extends State<FullStatsPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.sports_soccer, color: AppColors.primary, size: 20),
+              Icon(Icons.sports_soccer, color: _primaryColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Goles por partido',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: _textPrimaryColor,
                 ),
               ),
             ],
@@ -309,7 +319,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 12, color: _textSecondaryColor),
                         );
                       },
                     ),
@@ -326,7 +336,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               'P${value.toInt() + 1}',
-                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 10, color: _textSecondaryColor),
                             ),
                           );
                         }
@@ -340,7 +350,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: AppColors.primary,
+                    color: _primaryColor,
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
@@ -349,7 +359,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                           radius: 4,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: AppColors.primary,
+                          strokeColor: _primaryColor,
                         );
                       },
                     ),
@@ -359,8 +369,8 @@ class _FullStatsPageState extends State<FullStatsPage> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.primary.withOpacity(0.3),
-                          AppColors.primary.withOpacity(0.05),
+                          _primaryColor.withOpacity(0.3),
+                          _primaryColor.withOpacity(0.05),
                         ],
                       ),
                     ),
@@ -385,11 +395,11 @@ class _FullStatsPageState extends State<FullStatsPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _surfaceColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withOpacity(0.1),
+            color: _secondaryColor.withOpacity(0.12),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -401,14 +411,14 @@ class _FullStatsPageState extends State<FullStatsPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events, color: AppColors.secondary, size: 20),
+              Icon(Icons.emoji_events, color: _secondaryColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Asistencias por partido',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: _textPrimaryColor,
                 ),
               ),
             ],
@@ -437,7 +447,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                       getTitlesWidget: (value, meta) {
                         return Text(
                           value.toInt().toString(),
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 12, color: _textSecondaryColor),
                         );
                       },
                     ),
@@ -454,7 +464,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               'P${value.toInt() + 1}',
-                              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 10, color: _textSecondaryColor),
                             ),
                           );
                         }
@@ -468,7 +478,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: AppColors.secondary,
+                    color: _secondaryColor,
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
@@ -477,7 +487,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
                           radius: 4,
                           color: Colors.white,
                           strokeWidth: 2,
-                          strokeColor: AppColors.secondary,
+                          strokeColor: _secondaryColor,
                         );
                       },
                     ),
@@ -487,8 +497,8 @@ class _FullStatsPageState extends State<FullStatsPage> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppColors.secondary.withOpacity(0.3),
-                          AppColors.secondary.withOpacity(0.05),
+                          _secondaryColor.withOpacity(0.3),
+                          _secondaryColor.withOpacity(0.05),
                         ],
                       ),
                     ),
@@ -507,17 +517,17 @@ class _FullStatsPageState extends State<FullStatsPage> {
       return Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: _surfaceColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             children: [
-              Icon(Icons.sports_soccer, size: 48, color: AppColors.textSecondary),
-              SizedBox(height: 12),
+              Icon(Icons.sports_soccer, size: 48, color: _textSecondaryColor),
+              const SizedBox(height: 12),
               Text(
                 'No hay partidos registrados',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: _textSecondaryColor),
               ),
             ],
           ),
@@ -533,7 +543,7 @@ class _FullStatsPageState extends State<FullStatsPage> {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _surfaceColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -548,31 +558,31 @@ class _FullStatsPageState extends State<FullStatsPage> {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppColors.primaryLight,
+                color: _primaryColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 match['titular'] == true ? Icons.star : Icons.person,
-                color: AppColors.primary,
+                color: _primaryColor,
                 size: 24,
               ),
             ),
             title: Text(
               match['opponent'] ?? 'Partido',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, color: _textPrimaryColor),
             ),
-            subtitle: Text(dateStr, style: const TextStyle(fontSize: 12)),
+            subtitle: Text(dateStr, style: TextStyle(fontSize: 12, color: _textSecondaryColor)),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primaryLight,
+                color: _primaryColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${match['goles'] ?? 0}G / ${match['asistencias'] ?? 0}A',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: _primaryColor,
                 ),
               ),
             ),
