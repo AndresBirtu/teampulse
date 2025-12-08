@@ -88,26 +88,26 @@ class _DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Invitar jugador'),
-        content: const Text('Elige cómo quieres invitar al jugador'),
+        title: Text(context.tr('invite_player')),
+        content: Text(context.tr('invite_player_method')),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _showInviteLinkDialog(context, teamId);
             },
-            child: const Text('Generar enlace'),
+            child: Text(context.tr('generate_link')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               _showInviteByEmailDialog(context, teamId);
             },
-            child: const Text('Invitar por email'),
+            child: Text(context.tr('invite_by_email')),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancelar'),
+            child: Text(context.tr('cancel')),
           ),
         ],
       ),
@@ -123,35 +123,39 @@ class _DashboardPageState extends State<DashboardPage> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Enlace de invitación'),
+          title: Text(context.tr('invitation_link')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               SelectableText(link),
               const SizedBox(height: 12),
-              const Text('Copia y comparte este enlace con los jugadores.'),
+              Text(context.tr('share_link_instruction')),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cerrar'),
+              child: Text(context.tr('close')),
             ),
             TextButton(
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: link));
                 if (ctx.mounted) {
                   Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enlace copiado al portapapeles')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('link_copied'))),
+                  );
                 }
               },
-              child: const Text('Copiar enlace'),
+              child: Text(context.tr('copy_link')),
             ),
           ],
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('error_with_message', args: ['$e']))),
+      );
     }
   }
 
@@ -160,30 +164,35 @@ class _DashboardPageState extends State<DashboardPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Invitar por email'),
+        title: Text(context.tr('invite_by_email')),
         content: TextField(
           controller: emailController,
-          decoration: const InputDecoration(hintText: 'Email del jugador'),
-          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(hintText: context.tr('player_email')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(context.tr('cancel'))),
           TextButton(
             onPressed: () async {
               final email = emailController.text.trim();
               if (email.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingresa un email válido')));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('enter_valid_email'))),
+                );
                 return;
               }
               try {
                 final usersSnapshot = await FirebaseFirestore.instance.collection('users').where('email', isEqualTo: email).get();
                 if (usersSnapshot.docs.isEmpty) {
-                  if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Usuario no encontrado')));
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(context.tr('user_not_found'))),
+                    );
+                  }
                   return;
                 }
                 final userId = usersSnapshot.docs.first.id;
                 await FirebaseFirestore.instance.collection('teams').doc(teamId).collection('players').doc(userId).set({
-                  'name': usersSnapshot.docs.first['name'] ?? 'Jugador',
+                  'name': usersSnapshot.docs.first['name'] ?? context.tr('player'),
                   'email': email,
                   'role': 'jugador',
                   'goles': 0,
@@ -200,13 +209,19 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 if (ctx.mounted) {
                   Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Jugador invitado correctamente ✅')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('player_invited_successfully'))),
+                  );
                 }
               } catch (e) {
-                if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('error_with_message', args: ['$e']))),
+                  );
+                }
               }
             },
-            child: const Text('Invitar'),
+            child: Text(context.tr('invite')),
           ),
         ],
       ),
@@ -303,7 +318,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Sanciones por roja',
+                        context.tr('coach_sanctions_title'),
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -312,14 +327,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 const SizedBox(height: 16),
                 ...docs.map((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final playerName = data['playerName'] ?? 'Jugador';
+                  final playerName = data['playerName'] ?? context.tr('player');
                   final opponent = data['opponent'] ?? '';
-                  final reason = data['reason'] ?? 'Tarjeta roja';
+                  final reason = data['reason'] ?? context.tr('coach_sanction_default_reason');
                   final note = (data['notes'] ?? '').toString();
                   final matchDate = (data['matchDate'] as Timestamp?)?.toDate();
                   final dateStr = matchDate != null
                       ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
-                      : 'Fecha no registrada';
+                      : context.tr('coach_sanction_no_date');
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.only(bottom: 12),
@@ -343,16 +358,27 @@ class _DashboardPageState extends State<DashboardPage> {
                                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 4),
-                              Text('vs $opponent • $dateStr', style: theme.textTheme.bodySmall),
-                              Text('Motivo: $reason', style: theme.textTheme.bodySmall),
-                              if (note.isNotEmpty)
-                                Text('Nota del partido: $note', style: theme.textTheme.bodySmall),
+                              Text(
+                                context.tr('coach_sanction_vs_line', args: [opponent, dateStr]),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              Text(
+                                context.tr('coach_sanction_reason_line', args: [reason]),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              if (note.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  context.tr('coach_sanction_match_note_line', args: [note]),
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
                             ],
                           ),
                         ),
                         IconButton(
                           icon: Icon(Icons.check_circle, color: theme.colorScheme.secondary),
-                          tooltip: 'Marcar como cumplida',
+                          tooltip: context.tr('coach_sanction_mark_done'),
                           onPressed: () => _markSanctionServed(teamId, doc.id),
                         ),
                       ],
@@ -383,7 +409,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }
 
         final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-        final opponent = data['opponent'] ?? 'un partido oficial';
+        final opponent = data['opponent'] ?? context.tr('player_sanction_default_opponent');
         final warningColor = theme.colorScheme.error;
 
         return Container(
@@ -404,7 +430,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Tienes una sanción activa',
+                      context.tr('player_sanction_active_title'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: warningColor,
                         fontWeight: FontWeight.bold,
@@ -412,7 +438,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Por la última tarjeta roja vs $opponent. Consulta con tu entrenador antes de volver a jugar.',
+                      context.tr('player_sanction_active_body', args: [opponent]),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -438,12 +464,12 @@ class _DashboardPageState extends State<DashboardPage> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sanción actualizada')),
+        SnackBar(content: Text(context.tr('sanction_updated'))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo actualizar la sanción: $e')),
+        SnackBar(content: Text(context.tr('sanction_update_error', args: ['$e']))),
       );
     }
   }
@@ -461,11 +487,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
       if (!mounted) return;
 
+      var navigated = false;
       if (isCoach) {
         await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CoachProfilePage()),
         );
+        navigated = true;
       } else if (teamId != null && teamId.isNotEmpty) {
         await Navigator.push(
           context,
@@ -473,15 +501,20 @@ class _DashboardPageState extends State<DashboardPage> {
             builder: (_) => PlayerProfilePage(teamId: teamId, playerId: uid),
           ),
         );
+        navigated = true;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se encontró tu equipo para abrir el perfil.')),
+          SnackBar(content: Text(context.tr('profile_team_missing'))),
         );
+      }
+
+      if (navigated && mounted) {
+        setState(() {});
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el perfil: $e')),
+        SnackBar(content: Text(context.tr('profile_open_error', args: ['$e']))),
       );
     }
   }
@@ -498,7 +531,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final textPrimary = theme.textTheme.titleLarge?.color ?? Colors.black87;
 
     if (uid == null) {
-      return const Center(child: Text("Usuario no encontrado"));
+      return Center(child: Text(context.tr('user_not_found')));
     }
 
     final userStream = FirebaseFirestore.instance
@@ -508,9 +541,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Dashboard",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        title: Text(
+          context.tr('dashboard'),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -521,7 +554,7 @@ class _DashboardPageState extends State<DashboardPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
-            tooltip: 'Perfil y preferencias',
+            tooltip: context.tr('profile_preferences'),
             onPressed: _showProfileMenu,
           ),
           IconButton(
@@ -530,14 +563,12 @@ class _DashboardPageState extends State<DashboardPage> {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text("Cerrar sesión"),
-                  content: const Text(
-                    "¿Estás seguro de que quieres cerrar sesión?",
-                  ),
+                  title: Text(context.tr('logout')),
+                  content: Text(context.tr('logout_confirmation')),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text("Cancelar"),
+                      child: Text(context.tr('cancel')),
                     ),
                     TextButton(
                       onPressed: () async {
@@ -549,7 +580,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           (route) => false,
                         );
                       },
-                      child: const Text("Salir"),
+                      child: Text(context.tr('exit')),
                     ),
                   ],
                 ),
@@ -599,7 +630,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: Text(
-                            "Hola, ${userData["name"] ?? "Usuario"} 👋",
+                            '${context.tr('hello')}, ${userData['name'] ?? context.tr('user')} 👋',
                             style: const TextStyle(
                               fontSize: 20,
                               color: Colors.white,
@@ -717,7 +748,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                                     Icon(Icons.timer, color: onPrimary, size: 20),
                                                     const SizedBox(width: 6),
                                                     Text(
-                                                      daysUntilNext == 0 ? '¡Hoy!' : '$daysUntilNext días',
+                                                        daysUntilNext == 0
+                                                            ? context.tr('today')
+                                                            : '$daysUntilNext ${context.tr('days')}',
                                                       style: TextStyle(
                                                         color: onPrimary,
                                                         fontSize: 18,
@@ -728,7 +761,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  'Próximo partido',
+                                                  context.tr('next_match'),
                                                   style: TextStyle(
                                                     color: onPrimary.withOpacity(0.9),
                                                     fontSize: 11,
@@ -778,7 +811,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                currentStreak == 1 ? 'Victoria' : 'Racha',
+                                                currentStreak == 1
+                                                    ? context.tr('victory')
+                                                    : context.tr('streak'),
                                                 style: TextStyle(
                                                   color: onPrimary.withOpacity(0.9),
                                                   fontSize: 11,
@@ -865,9 +900,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  const Text(
-                                                    '⭐ Jugador destacado',
-                                                    style: TextStyle(
+                                                  Text(
+                                                    context.tr('featured_player'),
+                                                    style: const TextStyle(
                                                       color: Colors.white,
                                                       fontSize: 12,
                                                       fontWeight: FontWeight.w500,
@@ -885,7 +920,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   ),
                                                   const SizedBox(height: 4),
                                                   Text(
-                                                    '$topGoles goles • $topAsistencias asistencias',
+                                                    '${context.tr('goals')}: $topGoles • ${context.tr('assists')}: $topAsistencias',
                                                     style: TextStyle(
                                                       color: Colors.white.withOpacity(0.95),
                                                       fontSize: 13,
@@ -917,12 +952,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                       
                                       final matchDoc = nextMatchSnapshot.data!.docs.first;
                                       final matchData = matchDoc.data() as Map<String, dynamic>;
-                                      final opponent = matchData['rival'] ?? 'Rival';
+                                      final opponent = matchData['rival'] ?? context.tr('opponent');
                                       final matchDate = (matchData['date'] as Timestamp?)?.toDate();
                                       final location = matchData['location'] ?? '';
-                                      final dateStr = matchDate != null 
+                                        final dateStr = matchDate != null 
                                           ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
-                                          : 'N/A';
+                                          : context.tr('not_available');
                                       
                                       return Container(
                                         padding: const EdgeInsets.all(14),
@@ -1046,19 +1081,19 @@ class _DashboardPageState extends State<DashboardPage> {
                                 children: [
                                   _StatCard(
                                     icon: Icons.sports_soccer,
-                                    label: 'Partidos',
+                                    label: context.tr('matches'),
                                     value: partidos.toString(),
                                     color: Colors.blue,
                                   ),
                                   _StatCard(
                                     icon: Icons.sports,
-                                    label: 'Goles',
+                                    label: context.tr('goals'),
                                     value: goles.toString(),
                                     color: Colors.green,
                                   ),
                                   _StatCard(
                                     icon: Icons.group,
-                                    label: 'Asistencias',
+                                    label: context.tr('assists'),
                                     value: asistencias.toString(),
                                     color: Colors.orange,
                                   ),
@@ -1091,10 +1126,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                         padding: const EdgeInsets.all(12),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: const [
-                                            Text('Promedios', style: TextStyle(fontWeight: FontWeight.bold)),
-                                            SizedBox(height: 8),
-                                            Text('No hay datos de jugadores en el equipo aún.'),
+                                          children: [
+                                            Text(context.tr('averages'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 8),
+                                            Text(context.tr('no_player_data')),
                                           ],
                                         ),
                                       ),
@@ -1136,7 +1171,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text('Promedios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                          Text(context.tr('averages'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                           const SizedBox(height: 10),
                                           Row(
                                             children: [
@@ -1150,7 +1185,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
-                                                      const Text('📊 Promedio equipo', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                      Text(
+                                                        context.tr('team_average'),
+                                                        style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
+                                                      ),
                                                       const SizedBox(height: 8),
                                                       Row(
                                                         children: [
@@ -1160,7 +1198,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Goles / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('team_average_goals_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1184,7 +1222,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Asist / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('team_average_assists_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1208,7 +1246,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Min / Jug', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('team_average_minutes_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1238,7 +1276,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                   child: Column(
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
-                                                      const Text('⭐ Tus estadísticas', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                      Text(
+                                                        context.tr('your_statistics'),
+                                                        style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
+                                                      ),
                                                       const SizedBox(height: 8),
                                                       Row(
                                                         children: [
@@ -1248,7 +1289,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Goles', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('goals'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 24,
@@ -1272,7 +1313,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Asistencias', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('assists'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 24,
@@ -1296,7 +1337,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Minutos', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('minutes'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 24,
@@ -1318,7 +1359,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Goles/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('goals_per_90'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 22,
@@ -1336,7 +1377,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                const Text('Asist/90', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(context.tr('assists_per_90'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 22,
@@ -1394,7 +1435,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                "Gestión del equipo",
+                                context.tr('team_management'),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: textPrimary,
@@ -1409,7 +1450,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.group,
-                                label: "Ver jugadores",
+                                label: context.tr('view_players'),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -1423,7 +1464,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.sports_soccer,
-                                label: "Partidos",
+                                label: context.tr('matches'),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -1437,7 +1478,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.person_add,
-                                label: "Invitar",
+                                label: context.tr('invite'),
                                 gradient: _secondaryButtonGradient(context),
                                 shadowColor: context.secondaryColor.withOpacity(0.25),
                                 onPressed: () => _showInviteDialog(context, teamId),
@@ -1446,7 +1487,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.fitness_center,
-                                label: "Entrenamientos",
+                                label: context.tr('trainings'),
                                 gradient: _secondaryButtonGradient(context),
                                 shadowColor: context.secondaryColor.withOpacity(0.25),
                                 onPressed: () {
@@ -1460,7 +1501,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.calendar_month,
-                                label: "Calendario",
+                                label: context.tr('calendar'),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -1474,7 +1515,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               _managementButton(
                                 context,
                                 icon: Icons.bar_chart,
-                                label: "Estadísticas",
+                                label: context.tr('statistics'),
                                 onPressed: () {
                                   Navigator.push(
                                     context,
@@ -1503,7 +1544,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                "Próximos partidos",
+                                context.tr('upcoming_matches'),
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: textPrimary,
@@ -1528,12 +1569,12 @@ class _DashboardPageState extends State<DashboardPage> {
                               
                               final matchDoc = nextMatchSnapshot.data!.docs.first;
                               final matchData = matchDoc.data() as Map<String, dynamic>;
-                              final opponent = matchData['rival'] ?? 'Rival';
+                              final opponent = matchData['rival'] ?? context.tr('opponent');
                               final matchDate = (matchData['date'] as Timestamp?)?.toDate();
                               final location = matchData['location'] ?? '';
-                              final dateStr = matchDate != null 
+                                final dateStr = matchDate != null 
                                   ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
-                                  : 'N/A';
+                                  : context.tr('not_available');
                               
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
@@ -1561,7 +1602,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                         const Icon(Icons.calendar_today, color: Colors.white, size: 20),
                                         const SizedBox(width: 8),
                                         Text(
-                                          'Próximo Partido',
+                                          context.tr('next_match'),
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,
@@ -1644,19 +1685,17 @@ class _DashboardPageState extends State<DashboardPage> {
                               final matches = matchSnapshot.data!.docs;
 
                               if (matches.isEmpty) {
-                                return const Text(
-                                  "No hay partidos programados todavía ⚽",
-                                );
+                                return Text(context.tr('no_upcoming_matches'));
                               }
 
                               return Column(
                                 children: matches.map((matchDoc) {
                                   final matchData =
                                       matchDoc.data() as Map<String, dynamic>;
-                                  final teamA =
-                                      matchData["teamA"] ?? "Desconocido";
-                                  final teamB =
-                                      matchData["teamB"] ?? "Desconocido";
+                                    final teamA =
+                                      matchData["teamA"] ?? context.tr('unknown_team');
+                                    final teamB =
+                                      matchData["teamB"] ?? context.tr('unknown_team');
                                   final date = (matchData["date"] as Timestamp)
                                       .toDate();
                                   final matchId = matchDoc.id;
@@ -1750,7 +1789,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                       children: [
                                                         const Icon(Icons.check_circle, size: 14, color: Colors.green),
                                                         const SizedBox(width: 4),
-                                                        const Text('Convocado', style: TextStyle(color: Colors.green, fontSize: 12)),
+                                                        Text(context.tr('called_up_label'), style: const TextStyle(color: Colors.green, fontSize: 12)),
                                                       ],
                                                     ),
                                                   StreamBuilder<DocumentSnapshot>(
@@ -1771,10 +1810,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                                           children: [
                                                             const Icon(Icons.help_outline, size: 14, color: Colors.orange),
                                                             const SizedBox(width: 4),
-                                                            const Flexible(
+                                                            Flexible(
                                                               child: Text(
-                                                                '¿Vienes? Indica disponibilidad',
-                                                                style: TextStyle(color: Colors.orange, fontSize: 12),
+                                                                context.tr('availability_prompt'),
+                                                                style: const TextStyle(color: Colors.orange, fontSize: 12),
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),
                                                             ),
@@ -2056,9 +2095,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                           child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'PRÓXIMO PARTIDO',
-                          style: TextStyle(
+                        Text(
+                          context.tr('next_match').toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -2106,9 +2145,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                           child: const Icon(Icons.sports_soccer, color: Colors.white, size: 24),
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'PRÓXIMO PARTIDO',
-                          style: TextStyle(
+                        Text(
+                          context.tr('next_match').toUpperCase(),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -2126,9 +2165,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'No hay partidos programados',
-                  style: TextStyle(
+                Text(
+                  context.tr('no_scheduled_matches'),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -2148,12 +2187,12 @@ class __NextMatchCardState extends State<_NextMatchCard> {
 
           final matchDoc = docs.first;
           final matchData = matchDoc.data() as Map<String, dynamic>;
-          final opponentTeam = matchData['rival'] ?? 'Equipo contrario';
+          final opponentTeam = matchData['rival'] ?? context.tr('opponent');
           final matchDate = (matchData['date'] as Timestamp?)?.toDate();
           final location = matchData['location'] ?? '';
           final dateStr = matchDate != null 
               ? '${matchDate.day}/${matchDate.month}/${matchDate.year}'
-              : 'N/A';
+              : context.tr('not_available');
           final timeStr = matchDate != null
               ? '${matchDate.hour}:${matchDate.minute.toString().padLeft(2, '0')}'
               : '';
@@ -2165,7 +2204,7 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                 .doc(widget.teamId)
                 .get(),
             builder: (context, teamSnapshot) {
-              final teamName = (teamSnapshot.data?.data() as Map<String, dynamic>?)?['name'] ?? 'Tu equipo';
+              final teamName = (teamSnapshot.data?.data() as Map<String, dynamic>?)?['name'] ?? context.tr('your_team_placeholder');
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2178,9 +2217,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'PRÓXIMO PARTIDO',
-                              style: TextStyle(
+                            Text(
+                              context.tr('next_match').toUpperCase(),
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
@@ -2258,9 +2297,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'FECHA',
-                                style: TextStyle(
+                              Text(
+                                context.tr('date').toUpperCase(),
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -2289,9 +2328,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'HORA',
-                                  style: TextStyle(
+                                Text(
+                                  context.tr('time').toUpperCase(),
+                                  style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
@@ -2324,9 +2363,9 @@ class __NextMatchCardState extends State<_NextMatchCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'UBICACIÓN',
-                            style: TextStyle(
+                          Text(
+                            context.tr('location').toUpperCase(),
+                            style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 11,
                               fontWeight: FontWeight.w500,

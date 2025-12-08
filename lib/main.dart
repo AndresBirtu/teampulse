@@ -12,6 +12,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   await EasyLocalization.ensureInitialized();
   await PreferencesService.initialize();
+  final savedLanguageCode = PreferencesService.getSelectedLanguage();
+  final initialLocale = Locale(savedLanguageCode);
   
   try {
     await Firebase.initializeApp();
@@ -21,6 +23,7 @@ void main() async {
         supportedLocales: const [Locale('es'), Locale('en')],
         path: 'assets/translations',
         fallbackLocale: const Locale('es'),
+        startLocale: initialLocale,
         child: const MyApp(),
       ),
     );

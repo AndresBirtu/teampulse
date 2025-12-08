@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TrainingsPage extends StatefulWidget {
@@ -67,7 +68,7 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
   }
 
   String _formatTrainingDate(DateTime? date) {
-    if (date == null) return 'Sin fecha';
+    if (date == null) return context.tr('training_no_date');
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     final year = date.year;
@@ -77,13 +78,15 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
   }
 
   String _playerStatusLabel(Map<String, dynamic>? playerData) {
-    if (playerData == null) return 'Sin registro aún';
+    if (playerData == null) return context.tr('training_status_not_recorded');
     final presence = (playerData['presence'] ?? '').toString();
     final punctuality = (playerData['punctuality'] ?? '').toString();
-    if (presence == 'absent') return 'Ausente';
-    if (presence == 'present' && punctuality == 'late') return 'Presente (tarde)';
-    if (presence == 'present') return 'Presente y puntual';
-    return 'Sin registro aún';
+    if (presence == 'absent') return context.tr('training_status_absent');
+    if (presence == 'present' && punctuality == 'late') {
+      return context.tr('training_status_present_late');
+    }
+    if (presence == 'present') return context.tr('training_status_present_on_time');
+    return context.tr('training_status_not_recorded');
   }
 
   void _showPlayerTrainingDetail({
@@ -101,25 +104,41 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Sesión programada', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                context.tr('training_modal_session_title'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               const SizedBox(height: 4),
               Text(scheduledText, style: const TextStyle(fontSize: 15)),
               const SizedBox(height: 18),
-              const Text('Nota general', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                context.tr('training_modal_general_note_title'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 4),
               Text(
-                generalNote.isNotEmpty ? generalNote : 'El entrenador aún no deja una nota general.',
+                generalNote.isNotEmpty
+                    ? generalNote
+                    : context.tr('training_modal_general_note_placeholder'),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 18),
-              const Text('Nota para ti', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                context.tr('training_modal_personal_note_title'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 4),
               Text(
-                personalNote.isNotEmpty ? personalNote : 'Todavía no tienes una nota personalizada.',
+                personalNote.isNotEmpty
+                    ? personalNote
+                    : context.tr('training_modal_personal_note_placeholder'),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 18),
-              const Text('Estado asignado', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                context.tr('training_modal_status_title'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 4),
               Text(statusLabel, style: const TextStyle(fontSize: 14)),
             ],
@@ -138,11 +157,13 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
           .doc(id)
           .delete();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recurso eliminado')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('training_media_deleted'))),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo eliminar: $e')),
+        SnackBar(content: Text(context.tr('training_media_delete_error', args: ['$e']))),
       );
     }
   }
@@ -170,7 +191,7 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo guardar: $e')),
+          SnackBar(content: Text(context.tr('training_media_save_error', args: ['$e']))),
         );
       }
       return false;
@@ -201,46 +222,49 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Nuevo recurso', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(
+                      context.tr('training_media_new_resource'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: titleCtrl,
-                      decoration: const InputDecoration(labelText: 'Título'),
+                      decoration: InputDecoration(labelText: context.tr('training_media_field_title')),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: descCtrl,
                       maxLines: 3,
-                      decoration: const InputDecoration(labelText: 'Descripción (opcional)'),
+                      decoration: InputDecoration(labelText: context.tr('training_media_field_description')),
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: type,
-                      decoration: const InputDecoration(labelText: 'Tipo de recurso'),
-                      items: const [
-                        DropdownMenuItem(value: 'video', child: Text('Video / Jugada')),
-                        DropdownMenuItem(value: 'photo', child: Text('Foto / Imagen')),
-                        DropdownMenuItem(value: 'document', child: Text('Documento / Enlace')),
+                      decoration: InputDecoration(labelText: context.tr('training_media_field_type')),
+                      items: [
+                        DropdownMenuItem(value: 'video', child: Text(context.tr('training_media_option_video'))),
+                        DropdownMenuItem(value: 'photo', child: Text(context.tr('training_media_option_photo'))),
+                        DropdownMenuItem(value: 'document', child: Text(context.tr('training_media_option_document'))),
                       ],
                       onChanged: (value) => setModalState(() => type = value ?? 'video'),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: urlCtrl,
-                      decoration: const InputDecoration(labelText: 'URL (YouTube, Drive, etc.)'),
+                      decoration: InputDecoration(labelText: context.tr('training_media_field_url')),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.cloud_upload),
-                        label: const Text('Guardar recurso'),
+                        label: Text(context.tr('training_media_save_button')),
                         onPressed: () async {
                           final title = titleCtrl.text.trim();
                           final url = urlCtrl.text.trim();
                           if (title.isEmpty || url.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Completa título y URL')),
+                              SnackBar(content: Text(context.tr('training_media_validation_title_url'))),
                             );
                             return;
                           }
@@ -253,7 +277,7 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
                           if (success && mounted) {
                             Navigator.of(ctx).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Recurso agregado')),
+                              SnackBar(content: Text(context.tr('training_media_saved'))),
                             );
                           }
                         },
@@ -287,7 +311,7 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
         if (docs.isEmpty) {
           return Center(
             child: Text(
-              'No hay entrenamientos. Usa el botón para crear uno.',
+              context.tr('training_empty_state'),
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -319,10 +343,13 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
               child: ListTile(
-                title: Text('Entrenamiento - $formatted', style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(
+                  context.tr('training_card_title', args: [formatted]),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 subtitle: _isCoach
                     ? Text(
-                        notes.isEmpty ? 'Sin notas generales' : notes,
+                        notes.isEmpty ? context.tr('training_no_general_notes') : notes,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       )
@@ -330,17 +357,26 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Programado: $formatted'),
+                          Text(context.tr('training_programmed_line', args: [formatted])),
                           const SizedBox(height: 4),
-                          Text(notes.isNotEmpty ? 'Nota general: $notes' : 'Nota general: sin nota todavía'),
+                          Text(
+                            context.tr(
+                              'training_general_note_line',
+                              args: [
+                                notes.isNotEmpty
+                                    ? notes
+                                    : context.tr('training_general_note_placeholder'),
+                              ],
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             personalNote.isNotEmpty
-                                ? 'Nota para ti: $personalNote'
-                                : 'Aún no tienes nota personalizada',
+                                ? context.tr('training_personal_note_line', args: [personalNote])
+                                : context.tr('training_personal_note_placeholder'),
                           ),
                           const SizedBox(height: 4),
-                          Text('Estado: $statusLabel'),
+                          Text(context.tr('training_status_line', args: [statusLabel])),
                         ],
                       ),
                 trailing: Icon(
@@ -376,16 +412,16 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Entrenamientos'),
+        title: Text(context.tr('trainings')),
         backgroundColor: Theme.of(context).primaryColor,
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Sesiones'),
-            Tab(text: 'Material'),
+          tabs: [
+            Tab(text: context.tr('training_tab_sessions')),
+            Tab(text: context.tr('training_tab_material')),
           ],
         ),
       ),
@@ -405,7 +441,7 @@ class _TrainingsPageState extends State<TrainingsPage> with SingleTickerProvider
           : FloatingActionButton.extended(
               backgroundColor: Theme.of(context).primaryColor,
               icon: Icon(_tabController.index == 0 ? Icons.add : Icons.video_library),
-              label: Text(_tabController.index == 0 ? 'Nuevo entrenamiento' : 'Nuevo recurso'),
+              label: Text(_tabController.index == 0 ? context.tr('add_training') : context.tr('training_media_new_resource_button')),
               onPressed: _tabController.index == 0 ? _openNewTraining : _openMediaDialog,
             ),
     );
@@ -427,13 +463,13 @@ class _MediaLibraryTab extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('URL inválida')),
+        SnackBar(content: Text(context.tr('training_media_invalid_url'))),
       );
       return;
     }
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir el recurso')),
+        SnackBar(content: Text(context.tr('training_media_open_failed'))),
       );
     }
   }
@@ -454,14 +490,17 @@ class _MediaLibraryTab extends StatelessWidget {
                 child: Image.network(
                   url,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('No se pudo cargar la imagen'),
+                  errorBuilder: (_, __, ___) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(context.tr('training_media_image_load_error')),
                   ),
                 ),
               ),
             ),
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cerrar')),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.tr('close')),
+            ),
           ],
         ),
       ),
@@ -490,7 +529,7 @@ class _MediaLibraryTab extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Comparte videos, imágenes o documentos de jugadas para que todo el equipo los revise.',
+                context.tr('training_media_empty_state'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -504,7 +543,7 @@ class _MediaLibraryTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final doc = docs[index];
             final data = doc.data() as Map<String, dynamic>;
-            final title = data['title']?.toString() ?? 'Recurso';
+            final title = data['title']?.toString() ?? context.tr('training_media_default_title');
             final description = data['description']?.toString() ?? '';
             final mediaUrl = data['mediaUrl']?.toString() ?? '';
             final type = data['type']?.toString() ?? 'video';
@@ -536,7 +575,7 @@ class _MediaLibraryTab extends StatelessWidget {
                             height: 190,
                             color: Colors.black12,
                             alignment: Alignment.center,
-                            child: const Text('Imagen no disponible'),
+                            child: Text(context.tr('training_media_image_error')),
                           ),
                         ),
                       ),
@@ -587,7 +626,13 @@ class _MediaLibraryTab extends StatelessWidget {
                                     color: Theme.of(context).colorScheme.primary,
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(isVideo ? 'Video' : (isPhoto ? 'Foto' : 'Documento')),
+                                  Text(
+                                    isVideo
+                                        ? context.tr('training_media_type_video')
+                                        : (isPhoto
+                                            ? context.tr('training_media_type_photo')
+                                            : context.tr('training_media_type_document')),
+                                  ),
                                 ],
                               ),
                             ),
@@ -606,7 +651,11 @@ class _MediaLibraryTab extends StatelessWidget {
                         if (mediaUrl.isNotEmpty)
                           TextButton.icon(
                             icon: Icon(isPhoto ? Icons.fullscreen : Icons.open_in_new),
-                            label: Text(isPhoto ? 'Ver imagen' : 'Abrir recurso'),
+                            label: Text(
+                              isPhoto
+                                  ? context.tr('training_media_view_image')
+                                  : context.tr('training_media_open_resource'),
+                            ),
                             onPressed: () => isPhoto
                                 ? _showImage(context, mediaUrl, title)
                                 : _launchMedia(context, mediaUrl),
@@ -659,7 +708,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     for (var doc in snap.docs) {
       final d = doc.data();
       map[doc.id] = {
-        'name': d['name'] ?? 'Jugador',
+        'name': d['name'] ?? context.tr('player'),
         // default: assume present and on-time for fast marking
         'presence': 'present',
         'punctuality': 'on-time',
@@ -686,7 +735,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       final players = data['players'] as Map<String, dynamic>? ?? {};
       for (var e in players.entries) {
         _playersState[e.key] = {
-          'name': (players[e.key]['name'] ?? _playersState[e.key]?['name']) ?? 'Jugador',
+          'name': (players[e.key]['name'] ?? _playersState[e.key]?['name']) ?? context.tr('player'),
           'presence': players[e.key]['presence'] ?? 'absent',
           'punctuality': players[e.key]['punctuality'] ?? 'on-time',
           'fitness': players[e.key]['fitness'] ?? 3,
@@ -727,7 +776,11 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('training_save_error', args: ['$e']))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -739,18 +792,18 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     super.dispose();
   }
 
-  Widget _metricChip(BuildContext context, Map<String, dynamic> p, String label, int value) {
-    final keyMap = {
-      'Físico': 'fitness',
-      'Técnica': 'technique',
-      'Actitud': 'attitude',
-      'Riesgo': 'injuryRisk',
-    };
-    final key = keyMap[label] ?? label.toLowerCase();
-    int v = (p[key] ?? value) as int;
+  Widget _metricChip(
+    BuildContext context,
+    Map<String, dynamic> p,
+    String metricField,
+    String label,
+    int value,
+  ) {
+    int v = (p[metricField] ?? value) as int;
+    final isRisk = metricField == 'injuryRisk';
 
     Color chipColor;
-    if (label == 'Riesgo') {
+    if (isRisk) {
       if (v <= 1) {
         chipColor = Colors.green;
       } else if (v == 2) {
@@ -771,9 +824,9 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
     return GestureDetector(
       onTap: () {
         setState(() {
-          int cur = (p[key] ?? value) as int;
+          int cur = (p[metricField] ?? value) as int;
           cur = (cur % 3) + 1;
-          p[key] = cur;
+          p[metricField] = cur;
         });
       },
       child: Container(
@@ -787,7 +840,7 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              label == 'Riesgo'
+              isRisk
                   ? (v == 1 ? Icons.health_and_safety : (v == 2 ? Icons.report_problem : Icons.warning))
                   : (v == 1 ? Icons.thumb_down : (v == 2 ? Icons.remove_circle : Icons.thumb_up)),
               size: 16,
@@ -805,12 +858,22 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.trainingId == null ? 'Crear entrenamiento' : 'Editar entrenamiento'),
+        title: Text(
+          widget.trainingId == null
+              ? context.tr('training_create_title')
+              : context.tr('training_edit_title'),
+        ),
         backgroundColor: Theme.of(context).primaryColor,
         actions: [
           TextButton(
             onPressed: _loading ? null : _save,
-            child: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Guardar', style: TextStyle(color: Colors.white)),
+            child: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Text(context.tr('save'), style: const TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -824,20 +887,31 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.calendar_today),
-                    title: Text('Fecha: ${_date.day}/${_date.month}/${_date.year}'),
-                    trailing: TextButton(onPressed: () async {
-                      final picked = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(2000), lastDate: DateTime(2100));
-                      if (picked != null) setState(() => _date = picked);
-                    }, child: const Text('Cambiar')),
+                    title: Text('${context.tr('date')}: ${_date.day}/${_date.month}/${_date.year}'),
+                    trailing: TextButton(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _date,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) setState(() => _date = picked);
+                      },
+                      child: Text(context.tr('change')),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _notesCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Notas generales'),
+                    decoration: InputDecoration(labelText: context.tr('training_general_notes_label')),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Jugadores', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    context.tr('players'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   ..._playersState.entries.map((e) {
                     final p = e.value as Map<String, dynamic>;
@@ -876,7 +950,12 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                               // Fila superior: nombre, estado, nota
                               Row(
                                 children: [
-                                  Expanded(child: Text(p['name'] ?? 'Jugador', style: const TextStyle(fontWeight: FontWeight.bold))),
+                                  Expanded(
+                                    child: Text(
+                                      p['name'] ?? context.tr('player'),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                                     child: Column(
@@ -891,7 +970,14 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                                           size: 20,
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(presence == 'absent' ? 'Ausente' : (punctuality == 'on-time' ? 'Puntual' : 'Tarde'), style: const TextStyle(fontSize: 11)),
+                                        Text(
+                                          presence == 'absent'
+                                              ? context.tr('training_status_absent')
+                                              : (punctuality == 'on-time'
+                                                  ? context.tr('training_badge_on_time')
+                                                  : context.tr('training_badge_late')),
+                                          style: const TextStyle(fontSize: 11),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -903,11 +989,23 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                                         builder: (ctx) {
                                           final ctrl = TextEditingController(text: p['note'] ?? '');
                                           return AlertDialog(
-                                            title: const Text('Nota para jugador'),
-                                            content: TextField(controller: ctrl, maxLines: 4, decoration: const InputDecoration(hintText: 'Agregar nota...')),
+                                            title: Text(context.tr('training_player_note_title')),
+                                            content: TextField(
+                                              controller: ctrl,
+                                              maxLines: 4,
+                                              decoration: InputDecoration(
+                                                hintText: context.tr('training_player_note_hint'),
+                                              ),
+                                            ),
                                             actions: [
-                                              TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Cancelar')),
-                                              TextButton(onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()), child: const Text('Guardar')),
+                                              TextButton(
+                                                onPressed: () => Navigator.of(ctx).pop(null),
+                                                child: Text(context.tr('cancel')),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+                                                child: Text(context.tr('save')),
+                                              ),
                                             ],
                                           );
                                         },
@@ -923,10 +1021,34 @@ class _EditTrainingPageState extends State<EditTrainingPage> {
                                 spacing: 8,
                                 runSpacing: 6,
                                 children: [
-                                  _metricChip(context, p, 'Físico', p['fitness'] ?? 3),
-                                  _metricChip(context, p, 'Técnica', p['technique'] ?? 3),
-                                  _metricChip(context, p, 'Actitud', p['attitude'] ?? 3),
-                                  _metricChip(context, p, 'Riesgo', p['injuryRisk'] ?? 1),
+                                  _metricChip(
+                                    context,
+                                    p,
+                                    'fitness',
+                                    context.tr('training_metric_physical'),
+                                    p['fitness'] ?? 3,
+                                  ),
+                                  _metricChip(
+                                    context,
+                                    p,
+                                    'technique',
+                                    context.tr('training_metric_technique'),
+                                    p['technique'] ?? 3,
+                                  ),
+                                  _metricChip(
+                                    context,
+                                    p,
+                                    'attitude',
+                                    context.tr('training_metric_attitude'),
+                                    p['attitude'] ?? 3,
+                                  ),
+                                  _metricChip(
+                                    context,
+                                    p,
+                                    'injuryRisk',
+                                    context.tr('training_metric_risk'),
+                                    p['injuryRisk'] ?? 1,
+                                  ),
                                 ],
                               ),
                             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'theme/app_colors.dart';
+import 'services/preferences_service.dart';
 
 class LanguageSettingsPage extends StatelessWidget {
   const LanguageSettingsPage({super.key});
@@ -87,6 +88,7 @@ class _LanguageTile extends StatelessWidget {
             : null,
         onTap: () async {
           await context.setLocale(locale);
+          await PreferencesService.setSelectedLanguage(locale.languageCode);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
