@@ -66,6 +66,23 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     });
   }
+
+  int _scoreValue(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  Color _scoreChipColor(ThemeData theme, int goalsFor, int goalsAgainst) {
+    final scheme = theme.colorScheme;
+    if (goalsFor > goalsAgainst) {
+      return scheme.primary;
+    } else if (goalsFor < goalsAgainst) {
+      return scheme.error;
+    }
+    return scheme.secondary;
+  }
   
   void _showInviteDialog(BuildContext context, String teamId) {
     showDialog(
@@ -595,29 +612,15 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Next match card with animation - visible at the top for all users
-                _NextMatchCard(teamId: teamId),
-                if (role == 'entrenador' || role == 'coach')
-                  _buildCoachSanctionsPanel(teamId, theme)
-                else
-                  _buildPlayerSanctionAlert(teamId, uid, theme),
-
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection("teams")
+                      .collection('teams')
                       .doc(teamId)
-                      .collection("players")
-                      .doc(uid)
                       .snapshots(),
                   builder: (context, statsSnapshot) {
                     if (!statsSnapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    final statsData =
-                        statsSnapshot.data!.data() as Map<String, dynamic>? ??
-                        {};
-
                     return Column(
                       children: [
                         if (role == "entrenador")
@@ -1016,30 +1019,52 @@ class _DashboardPageState extends State<DashboardPage> {
                             },
                           )
                         else
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _StatCard(
-                                icon: Icons.sports_soccer,
-                                label: "Partidos",
-                                value: (statsData["partidos"] ?? 0)
-                                    .toString(),
-                                color: Colors.blue,
-                              ),
-                              _StatCard(
-                                icon: Icons.sports,
-                                label: "Goles",
-                                value: (statsData["goles"] ?? 0).toString(),
-                                color: Colors.green,
-                              ),
-                              _StatCard(
-                                icon: Icons.group,
-                                label: "Asistencias",
-                                value: (statsData["asistencias"] ?? 0)
-                                    .toString(),
-                                color: Colors.orange,
-                              ),
-                            ],
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('teams')
+                                .doc(teamId)
+                                .collection('players')
+                                .doc(uid)
+                                .snapshots(),
+                            builder: (context, playerSnapshot) {
+                              if (playerSnapshot.connectionState == ConnectionState.waiting) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(child: CircularProgressIndicator()),
+                                );
+                              }
+
+                              final playerStats =
+                                  playerSnapshot.data?.data() as Map<String, dynamic>? ?? {};
+
+                              final partidos = (playerStats['partidos'] as int?) ?? 0;
+                              final goles = (playerStats['goles'] as int?) ?? 0;
+                              final asistencias = (playerStats['asistencias'] as int?) ?? 0;
+
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _StatCard(
+                                    icon: Icons.sports_soccer,
+                                    label: 'Partidos',
+                                    value: partidos.toString(),
+                                    color: Colors.blue,
+                                  ),
+                                  _StatCard(
+                                    icon: Icons.sports,
+                                    label: 'Goles',
+                                    value: goles.toString(),
+                                    color: Colors.green,
+                                  ),
+                                  _StatCard(
+                                    icon: Icons.group,
+                                    label: 'Asistencias',
+                                    value: asistencias.toString(),
+                                    color: Colors.orange,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         if (role == "jugador")
                           Column(
@@ -1077,10 +1102,14 @@ class _DashboardPageState extends State<DashboardPage> {
                                   }
 
                                   int totalG = 0, totalA = 0, totalM = 0, count = 0;
+                                  Map<String, dynamic>? myStats;
                                   for (var d in docs) {
                                     final pd = d.data() as Map<String, dynamic>;
                                     final r = (pd['role'] as String?) ?? '';
                                     if (r.toLowerCase() == 'entrenador') continue;
+                                    if (d.id == uid) {
+                                      myStats = pd;
+                                    }
                                     totalG += (pd['goles'] as int?) ?? 0;
                                     totalA += (pd['asistencias'] as int?) ?? 0;
                                     totalM += (pd['minutos'] as int?) ?? 0;
@@ -1091,9 +1120,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                   final teamAProm = count > 0 ? (totalA / count) : 0.0;
                                   final teamMProm = count > 0 ? (totalM / count) : 0.0;
 
-                                  final myG = (statsData['goles'] ?? 0) as int;
-                                  final myA = (statsData['asistencias'] ?? 0) as int;
-                                  final myM = (statsData['minutos'] ?? 0) as int;
+                                  final playerStats = myStats ?? {};
+                                  final myG = (playerStats['goles'] as int?) ?? 0;
+                                  final myA = (playerStats['asistencias'] as int?) ?? 0;
+                                  final myM = (playerStats['minutos'] as int?) ?? 0;
                                   
                                   final myGoalsPerMin = myM > 0 ? (myG / myM * 90).toStringAsFixed(2) : '0.00';
                                   final myAssistsPerMin = myM > 0 ? (myA / myM * 90).toStringAsFixed(2) : '0.00';
@@ -1633,6 +1663,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                   final convocados = List<String>.from(matchData['convocados'] ?? []);
                                   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
                                   final isConvocado = currentUserId != null && convocados.contains(currentUserId);
+                                    final golesTeamA = _scoreValue(matchData['golesTeamA']);
+                                    final golesTeamB = _scoreValue(matchData['golesTeamB']);
+                                    final matchTheme = Theme.of(context);
+                                    final resultColor = _scoreChipColor(matchTheme, golesTeamA, golesTeamB);
+                                    final resultBackground = resultColor.withOpacity(matchTheme.brightness == Brightness.dark ? 0.25 : 0.12);
 
                                   final formattedDate =
                                       "${date.day}/${date.month}/${date.year} - ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
@@ -1690,18 +1725,18 @@ class _DashboardPageState extends State<DashboardPage> {
                                                     Container(
                                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                       decoration: BoxDecoration(
-                                                        color: Colors.blue.shade50,
+                                                        color: resultBackground,
                                                         borderRadius: BorderRadius.circular(8),
                                                       ),
                                                       child: Row(
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
-                                                          const Icon(Icons.emoji_events, size: 14, color: Colors.blue),
+                                                          Icon(Icons.emoji_events, size: 14, color: resultColor),
                                                           const SizedBox(width: 4),
                                                           Text(
-                                                            '${matchData['golesTeamA'] ?? 0} - ${matchData['golesTeamB'] ?? 0}',
-                                                            style: const TextStyle(
-                                                              color: Colors.blue,
+                                                            '$golesTeamA - $golesTeamB',
+                                                            style: TextStyle(
+                                                              color: resultColor,
                                                               fontSize: 13,
                                                               fontWeight: FontWeight.bold,
                                                             ),

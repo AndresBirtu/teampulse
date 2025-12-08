@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'services/preferences_service.dart';
 
@@ -22,10 +24,13 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
   late TextEditingController photoUrlController;
   Map<String, dynamic>? playerData;
   bool _loading = true;
+  bool _uploadingPhoto = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
+    photoUrlController = TextEditingController();
     _loadPlayerData();
   }
 
@@ -37,16 +42,24 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           .collection('players')
           .doc(widget.playerId)
           .get();
-      if (doc.exists) {
+      if (!doc.exists) {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+        return;
+      }
+
+      if (mounted) {
         setState(() {
           playerData = doc.data();
-          photoUrlController = TextEditingController(text: playerData?['photoUrl'] ?? '');
+          photoUrlController.text = playerData?['photoUrl'] ?? '';
           _loading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error cargando perfil: $e')));
+        setState(() => _loading = false);
       }
     }
   }
@@ -60,15 +73,74 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           .doc(widget.playerId)
           .set({'photoUrl': photoUrlController.text.trim()}, SetOptions(merge: true));
 
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.playerId)
+          .set({'photoUrl': photoUrlController.text.trim()}, SetOptions(merge: true));
+
       if (mounted) {
+        setState(() {
+          playerData = {
+            ...?playerData,
+            'photoUrl': photoUrlController.text.trim(),
+          };
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Foto de perfil actualizada')),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error guardando: $e')));
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 80,
+    );
+    if (pickedFile == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final ref = FirebaseStorage.instance.ref('users/${widget.playerId}/player-avatar.jpg');
+      final bytes = await pickedFile.readAsBytes();
+      final snapshot = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      final url = await snapshot.ref.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('teams')
+          .doc(widget.teamId)
+          .collection('players')
+          .doc(widget.playerId)
+          .set({'photoUrl': url}, SetOptions(merge: true));
+
+      await FirebaseFirestore.instance.collection('users').doc(widget.playerId).set({'photoUrl': url}, SetOptions(merge: true));
+
+      if (mounted) {
+        setState(() {
+          photoUrlController.text = url;
+          playerData = {
+            ...?playerData,
+            'photoUrl': url,
+          };
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto actualizada desde la galería')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo subir la foto: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingPhoto = false);
       }
     }
   }
@@ -237,12 +309,29 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _guardarFoto,
-                        child: const Text('Guardar foto de perfil'),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                            icon: _uploadingPhoto
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.camera_alt),
+                            label: Text(_uploadingPhoto ? 'Subiendo...' : 'Subir desde galería'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _guardarFoto,
+                            child: const Text('Guardar foto de perfil'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
