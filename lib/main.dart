@@ -1,12 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart'; 
 import 'package:easy_localization/easy_localization.dart';
-import 'home_page.dart';
-import 'theme/app_themes.dart';
+import 'package:firebase_core/firebase_core.dart'; 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:teampulse/features/auth/presentation/pages/auth_page.dart';
+import 'package:teampulse/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'services/notification_service.dart';
 import 'services/preferences_service.dart';
+import 'theme/app_themes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
@@ -24,7 +26,9 @@ void main() async {
         path: 'assets/translations',
         fallbackLocale: const Locale('es'),
         startLocale: initialLocale,
-        child: const MyApp(),
+        child: const ProviderScope(
+          child: MyApp(),
+        ),
       ),
     );
   } catch (e) {
@@ -68,7 +72,11 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       theme: AppThemes.getTheme(_currentTheme),
-      home: const HomePage(),
+      initialRoute: '/auth',
+      routes: {
+        '/auth': (_) => const AuthPage(),
+        '/dashboard': (_) => const DashboardPage(),
+      },
     );
   }
 }

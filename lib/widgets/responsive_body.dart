@@ -1,3 +1,4 @@
+export 'package:teampulse/core/widgets/responsive_body.dart';
 import 'package:flutter/material.dart';
 
 /// Centers content on large screens while keeping native spacing on phones.

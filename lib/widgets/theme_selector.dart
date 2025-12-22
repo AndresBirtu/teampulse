@@ -1,3 +1,4 @@
+export 'package:teampulse/core/widgets/theme_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../theme/app_themes.dart';

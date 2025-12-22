@@ -1,0 +1,1 @@
+enum AuthRole { coach, player }

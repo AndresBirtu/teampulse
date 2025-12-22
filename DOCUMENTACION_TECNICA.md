@@ -12,50 +12,66 @@
 ## 🏗️ Arquitectura de Sistemas
 
 ### Visión General
-TeamPulse es una aplicación de gestión futbolística con arquitectura cliente-servidor basada en **Firebase** como backend cloud. La aplicación sigue el patrón **BLoC** (Business Logic Component) adaptado a Flutter con **StreamBuilder** y **FutureBuilder** para manejo de estado reactivo.
+TeamPulse sigue una arquitectura **feature-first** con capas limpias y ligeras. Cada funcionalidad (players, matches, trainings, dashboard, etc.) posee sus propias carpetas `presentation/domain/data`. La capa de presentación implementa **MVVM** apoyándose en **Riverpod** (`StateNotifier` y `AsyncNotifier`) para la gestión de estado y la inyección de dependencias. El dominio contiene entidades y casos de uso puros (sin Flutter), mientras que la capa de datos implementa los repositorios hablando con Firebase.
+
+### Principios aplicados
+- **Feature-first**: agrupa código por contexto funcional para aislar responsabilidades y facilitar la evolución del TFG.
+- **MVVM con Riverpod**: Widgets (View) consumen ViewModels `StateNotifier`, que a su vez orquestan casos de uso.
+- **Clean Architecture ligera**: solo tres capas claras (presentation, domain, data) con dependencias apuntando hacia el dominio.
+- **Inyección declarativa**: Riverpod provee datasources → repositorios → casos de uso → viewmodels, lo que mejora testabilidad.
+- **Enfoque práctico**: se evita la sobreingeniería; solo se añaden interfaces y casos de uso cuando aportan valor directo.
 
 ### Capas de Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE PRESENTACIÓN                     │
-│  (Flutter UI - Páginas, Widgets, Componentes)               │
-│  - HomePage, DashboardPage, PlayersPage, MatchPage, etc.  │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    CAPA DE SERVICIOS                        │
-│  (Lógica de Negocio y Coordenación)                        │
-│  - NotificationService (Push Notifications)               │
-│  - AuthService (Autenticación con Firebase Auth)          │
-│  - DataService (Operaciones CRUD)                         │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   CAPA DE DATOS (Firebase)                  │
-│  - Firestore (Base de datos NoSQL)                         │
-│  - Firebase Authentication (Autenticación)                 │
-│  - Cloud Messaging (Push Notifications)                   │
-│  - Cloud Storage (Imágenes de perfil)                     │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                  CAPA DE PRESENTACIÓN (Features)             │
+│  - Widgets + ViewModels (MVVM con Riverpod)                  │
+│  - Providers por feature: Dashboard, Players, Matches, etc.  │
+└──────────────────────┬───────────────────────────────────────┘
+                  │ consume casos de uso                 
+                  ▼
+┌──────────────────────────────────────────────────────────────┐
+│                       CAPA DE DOMINIO                        │
+│  - Entidades puras (Match, Player, Training)                 │
+│  - Casos de uso (FetchMatches, UpdateAvailability, etc.)     │
+│  - Interfaces de repositorio                                │
+└──────────────────────┬───────────────────────────────────────┘
+                  │ es implementado por                  
+                  ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    CAPA DE DATOS (Firebase)                  │
+│  - Repositorios concretos (Firestore/Storage/Auth)           │
+│  - DataSources remotos y DTOs                               │
+│  - Adaptadores a APIs de Firebase                           │
+└──────────────────────────────────────────────────────────────┘
 ```
+
+Cada feature mantiene este mismo patrón interno `presentation/domain/data`, lo que permite trabajar modularmente y escalar la app sin afectar al resto de módulos.
 
 ### Flujo de Datos
 
 ```
-Usuario ──▶ [Interfaz Flutter] ──▶ [StreamBuilder/FutureBuilder]
-    │                                      │
-    │                                      ▼
-    │                           [Firestore Queries/Listeners]
-    │                                      │
-    │                                      ▼
-    │                           [Firebase Realtime Updates]
-    │                                      │
-    └──────────────────────────────────────┘
-              (Actualizaciones Reactivas)
+Usuario ──▶ [Widget/Feature] ──▶ [Riverpod ViewModel]
+   │                             │        │
+   │                             │        ▼
+   │                             │  [Caso de uso]
+   │                             │        │
+   │                             │        ▼
+   │                             │  [Repositorio]
+   │                             │        │
+   │                             └────────▼
+   │                           [Firestore / Storage]
+   │                                      │
+   └──────────────────────────────────────┘
+           (Estados AsyncValue y listeners)
 ```
+
+### Justificación para el TFG
+- **Claridad académica**: se puede explicar con los principios de Clean Architecture e MVVM.
+- **Compatibilidad con Flutter**: Riverpod elimina dependencias del `BuildContext`, simplificando la UI.
+- **Testabilidad**: los casos de uso y ViewModels pueden probarse aislados gracias a la inversión de dependencias.
+- **Escalabilidad modular**: agregar una nueva feature implica replicar el mismo esqueleto sin tocar las existentes.
 
 ### Tecnologías de Backend
 
