@@ -72,6 +72,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     required String teamId,
     required String playerId,
     DateTime? estimatedReturn,
+    String? injuryArea,
   }) async {
     await _firestore
         .collection('teams')
@@ -83,6 +84,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
       'injuryReturnDate': estimatedReturn != null
           ? Timestamp.fromDate(estimatedReturn)
           : null,
+      if (injuryArea != null && injuryArea.isNotEmpty) 'injuryArea': injuryArea,
     });
   }
 
@@ -99,7 +101,32 @@ class PlayerRepositoryImpl implements PlayerRepository {
         .update({
       'injured': false,
       'injuryReturnDate': FieldValue.delete(),
+      'injuryArea': FieldValue.delete(),
     });
+  }
+
+  @override
+  Future<void> setCaptain({
+    required String teamId,
+    required String playerId,
+    required bool isCaptain,
+  }) async {
+    final playersCollection =
+        _firestore.collection('teams').doc(teamId).collection('players');
+
+    final batch = _firestore.batch();
+
+    if (isCaptain) {
+      final currentCaptains = await playersCollection.where('isCaptain', isEqualTo: true).get();
+      for (final doc in currentCaptains.docs) {
+        if (doc.id == playerId) continue;
+        batch.update(doc.reference, {'isCaptain': false});
+      }
+    }
+
+    batch.update(playersCollection.doc(playerId), {'isCaptain': isCaptain});
+
+    await batch.commit();
   }
 
   @override
@@ -140,6 +167,8 @@ class PlayerRepositoryImpl implements PlayerRepository {
       redCards: _asInt(data['tarjetas_rojas']),
       injured: data['injured'] == true,
       injuryReturnDate: injuryDate,
+      injuryArea: data['injuryArea'] as String?,
+      isCaptain: data['isCaptain'] == true,
       photoUrl: (data['photoUrl'] as String?) ?? '',
       teamId: (data['teamId'] as String?) ?? '',
     );

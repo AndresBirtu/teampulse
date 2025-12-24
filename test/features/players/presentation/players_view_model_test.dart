@@ -28,6 +28,8 @@ void main() {
     String position = 'Pivot',
     bool injured = false,
     DateTime? injuryReturnDate,
+    String? injuryArea,
+    bool isCaptain = false,
   }) {
     return Player(
       id: id,
@@ -43,6 +45,8 @@ void main() {
       redCards: 0,
       injured: injured,
       injuryReturnDate: injuryReturnDate,
+      injuryArea: injuryArea,
+      isCaptain: isCaptain,
       photoUrl: '',
       teamId: args.teamId,
     );
@@ -153,6 +157,20 @@ void main() {
     expect(fakeRepository.lastServedTeamId, args.teamId);
     expect(fakeRepository.lastResolvedBy, args.userId);
   });
+
+  test('delegates setCaptain with view args context', () async {
+    final provider = playersViewModelProvider(args);
+    final sub = container.listen(provider, (_, __) {});
+    addTearDown(sub.close);
+    await container.read(provider.future);
+
+    final controller = container.read(provider.notifier);
+    await controller.setCaptain('player-10', true);
+
+    expect(fakeRepository.lastCaptainTeamId, args.teamId);
+    expect(fakeRepository.lastCaptainPlayerId, 'player-10');
+    expect(fakeRepository.lastCaptainValue, isTrue);
+  });
 }
 
 class _FakePlayerRepository implements PlayerRepository {
@@ -165,6 +183,9 @@ class _FakePlayerRepository implements PlayerRepository {
   String? lastServedTeamId;
   String? lastServedSanctionId;
   String? lastResolvedBy;
+  String? lastCaptainTeamId;
+  String? lastCaptainPlayerId;
+  bool? lastCaptainValue;
 
   void emitPlayers(List<Player> players) => _playersController.add(players);
   void emitSanctions(List<Sanction> sanctions) => _sanctionsController.add(sanctions);
@@ -199,6 +220,7 @@ class _FakePlayerRepository implements PlayerRepository {
     required String teamId,
     required String playerId,
     DateTime? estimatedReturn,
+    String? injuryArea,
   }) async {}
 
   @override
@@ -206,6 +228,17 @@ class _FakePlayerRepository implements PlayerRepository {
     required String teamId,
     required String playerId,
   }) async {}
+
+  @override
+  Future<void> setCaptain({
+    required String teamId,
+    required String playerId,
+    required bool isCaptain,
+  }) async {
+    lastCaptainTeamId = teamId;
+    lastCaptainPlayerId = playerId;
+    lastCaptainValue = isCaptain;
+  }
 
   @override
   Future<void> updatePlayerStats({

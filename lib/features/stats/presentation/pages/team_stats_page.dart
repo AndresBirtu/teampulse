@@ -181,25 +181,48 @@ class TeamStatsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _StatBoxPromedio(
-                            label: "Goles/Jug",
-                            value: promGoles.toStringAsFixed(1),
-                            color: Colors.greenAccent,
-                          ),
-                          _StatBoxPromedio(
-                            label: "Asist/Jug",
-                            value: promAsistencias.toStringAsFixed(1),
-                            color: Colors.orangeAccent,
-                          ),
-                          _StatBoxPromedio(
-                            label: "Min/Jug",
-                            value: promMinutos.toStringAsFixed(0),
-                            color: Colors.lightBlueAccent,
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const spacing = 12.0;
+                          final isWide = constraints.maxWidth > 520;
+                          final columns = isWide ? 3 : 2;
+                          final availableWidth = constraints.maxWidth;
+                          final rawWidth = (availableWidth - spacing * (columns - 1)) / columns;
+                          final tileWidth = rawWidth.isFinite && rawWidth > 0
+                              ? rawWidth
+                              : availableWidth / columns;
+
+                          final tiles = [
+                            _StatBoxPromedio(
+                              label: 'Goles por jugador',
+                              value: promGoles.toStringAsFixed(1),
+                              color: Colors.greenAccent,
+                            ),
+                            _StatBoxPromedio(
+                              label: 'Asistencias por jugador',
+                              value: promAsistencias.toStringAsFixed(1),
+                              color: Colors.orangeAccent,
+                            ),
+                            _StatBoxPromedio(
+                              label: 'Minutos por jugador',
+                              value: promMinutos.toStringAsFixed(0),
+                              color: Colors.lightBlueAccent,
+                            ),
+                          ];
+
+                          return Wrap(
+                            spacing: spacing,
+                            runSpacing: spacing,
+                            children: tiles
+                                .map(
+                                  (tile) => SizedBox(
+                                    width: tileWidth,
+                                    child: tile,
+                                  ),
+                                )
+                                .toList(),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -306,35 +329,46 @@ class _StatBoxPromedio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.35),
-            width: 1.5,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.35),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: 0.2,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11, color: Colors.white70),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Promedio por jugador',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.8),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

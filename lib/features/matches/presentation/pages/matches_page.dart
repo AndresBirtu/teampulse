@@ -290,12 +290,14 @@ class MatchesPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  onTap: () => _editMatchResult(
-                    context: context,
-                    viewModel: viewModel,
-                    match: match,
-                    activeColor: primary,
-                  ),
+                  onTap: isCoach
+                      ? () => _editMatchResult(
+                            context: context,
+                            viewModel: viewModel,
+                            match: match,
+                            activeColor: primary,
+                          )
+                      : null,
                   ),
                 ),
               );

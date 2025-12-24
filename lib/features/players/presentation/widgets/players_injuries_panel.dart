@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teampulse/features/players/constants/injury_areas.dart';
 import 'package:teampulse/features/players/domain/entities/player.dart';
 
 class PlayersInjuriesPanel extends StatelessWidget {
@@ -31,6 +32,7 @@ class PlayersInjuriesPanel extends StatelessWidget {
           const SizedBox(height: 8),
           ...injuredPlayers.map((player) {
             final injuryDate = player.injuryReturnDate;
+            final areaLabel = describeInjuryArea(player.injuryArea);
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
@@ -39,7 +41,7 @@ class PlayersInjuriesPanel extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      player.name,
+                      '${player.name} · $areaLabel',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),

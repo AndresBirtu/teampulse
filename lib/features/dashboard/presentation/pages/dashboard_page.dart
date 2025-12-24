@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -1151,7 +1151,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                Text(context.tr('team_average_goals_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(
+                                                                  _label(context, 'team_average_goals_per_player', 'Goles por jugador'),
+                                                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                                                ),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1175,7 +1178,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                Text(context.tr('team_average_assists_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(
+                                                                  _label(context, 'team_average_assists_per_player', 'Asistencias por jugador'),
+                                                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                                                ),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1199,7 +1205,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                Text(context.tr('team_average_minutes_per_player'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(
+                                                                  _label(context, 'team_average_minutes_per_player', 'Minutos por jugador'),
+                                                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                                                ),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 26,
@@ -1312,7 +1321,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                Text(context.tr('goals_per_90'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(
+                                                                  _label(context, 'goals_per_90', "Goles cada 90'"),
+                                                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                                                ),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 22,
@@ -1330,7 +1342,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
                                                               children: [
-                                                                Text(context.tr('assists_per_90'), style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                                                                Text(
+                                                                  _label(context, 'assists_per_90', "Asistencias cada 90'"),
+                                                                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                                                ),
                                                                 const SizedBox(height: 4),
                                                                 SizedBox(
                                                                   height: 22,
@@ -1871,6 +1886,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
               _buildNavItem(
                 context,
+                icon: Icons.fitness_center,
+                label: 'Entrenos',
+                color: secondary,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (ctx) => TrainingsPage(teamId: teamId),
+                    ),
+                  );
+                },
+              ),
+              _buildNavItem(
+                context,
                 icon: Icons.bar_chart,
                 label: 'Stats',
                 color: secondary,
@@ -1996,6 +2025,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ),
       ),
     );
+  }
+
+  String _label(BuildContext context, String key, String fallback) {
+    final value = context.tr(key);
+    return value.contains('_') ? fallback : value;
   }
 }
 

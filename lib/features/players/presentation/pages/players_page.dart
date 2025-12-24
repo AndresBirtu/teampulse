@@ -104,6 +104,11 @@ class _PlayersViewBody extends StatelessWidget {
                     player: player,
                     controller: controller,
                   ),
+                  onCaptainToggle: (makeCaptain) => _handleCaptainChange(
+                    context,
+                    player,
+                    makeCaptain,
+                  ),
                   onEdit: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -160,6 +165,30 @@ class _PlayersViewBody extends StatelessWidget {
     }
   }
 
+  Future<void> _handleCaptainChange(
+    BuildContext context,
+    Player player,
+    bool makeCaptain,
+  ) async {
+    if (!state.isCoach) return;
+    try {
+      await controller.setCaptain(player.id, makeCaptain);
+      if (context.mounted) {
+        final message = makeCaptain
+            ? '${player.name} ahora es capitán del equipo'
+            : '${player.name} dejó el rol de capitán';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo actualizar la capitanía: $e')),
+        );
+      }
+    }
+  }
 }
 
 

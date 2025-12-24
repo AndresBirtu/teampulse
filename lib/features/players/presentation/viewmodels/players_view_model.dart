@@ -78,13 +78,18 @@ class PlayersViewModel extends AutoDisposeFamilyAsyncNotifier<PlayersState, Play
     );
   }
 
-  Future<void> markPlayerInjury(String playerId, {DateTime? estimatedReturn}) async {
+  Future<void> markPlayerInjury(
+    String playerId, {
+    DateTime? estimatedReturn,
+    String? injuryArea,
+  }) async {
     final args = _args;
     if (args == null) return;
     await _repository?.markPlayerInjury(
       teamId: args.teamId,
       playerId: playerId,
       estimatedReturn: estimatedReturn,
+      injuryArea: injuryArea,
     );
   }
 
@@ -92,6 +97,16 @@ class PlayersViewModel extends AutoDisposeFamilyAsyncNotifier<PlayersState, Play
     final args = _args;
     if (args == null) return;
     await _repository?.clearPlayerInjury(teamId: args.teamId, playerId: playerId);
+  }
+
+  Future<void> setCaptain(String playerId, bool isCaptain) async {
+    final args = _args;
+    if (args == null) return;
+    await _repository?.setCaptain(
+      teamId: args.teamId,
+      playerId: playerId,
+      isCaptain: isCaptain,
+    );
   }
 
   void _handlePlayersUpdate(List<Player> players) {

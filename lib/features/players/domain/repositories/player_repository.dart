@@ -15,10 +15,16 @@ abstract class PlayerRepository {
     required String teamId,
     required String playerId,
     DateTime? estimatedReturn,
+    String? injuryArea,
   });
   Future<void> clearPlayerInjury({
     required String teamId,
     required String playerId,
+  });
+  Future<void> setCaptain({
+    required String teamId,
+    required String playerId,
+    required bool isCaptain,
   });
   Future<void> updatePlayerStats({
     required String teamId,

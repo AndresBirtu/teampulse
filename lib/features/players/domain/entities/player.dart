@@ -13,6 +13,8 @@ class Player {
     required this.redCards,
     required this.injured,
     required this.injuryReturnDate,
+    required this.injuryArea,
+    required this.isCaptain,
     required this.photoUrl,
     required this.teamId,
   });
@@ -30,6 +32,8 @@ class Player {
   final int redCards;
   final bool injured;
   final DateTime? injuryReturnDate;
+  final String? injuryArea;
+  final bool isCaptain;
   final String photoUrl;
   final String teamId;
 
@@ -52,6 +56,8 @@ class Player {
       'tarjetas_rojas': redCards,
       'injured': injured,
       'injuryReturnDate': injuryReturnDate,
+      'injuryArea': injuryArea,
+      'isCaptain': isCaptain,
       'photoUrl': photoUrl,
       'teamId': teamId,
     };
@@ -71,6 +77,8 @@ class Player {
     int? redCards,
     bool? injured,
     DateTime? injuryReturnDate,
+    String? injuryArea,
+    bool? isCaptain,
     String? photoUrl,
     String? teamId,
   }) {
@@ -88,6 +96,8 @@ class Player {
       redCards: redCards ?? this.redCards,
       injured: injured ?? this.injured,
       injuryReturnDate: injuryReturnDate ?? this.injuryReturnDate,
+      injuryArea: injuryArea ?? this.injuryArea,
+      isCaptain: isCaptain ?? this.isCaptain,
       photoUrl: photoUrl ?? this.photoUrl,
       teamId: teamId ?? this.teamId,
     );
