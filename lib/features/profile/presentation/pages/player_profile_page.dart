@@ -105,7 +105,8 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
 
     setState(() => _uploadingPhoto = true);
     try {
-      final ref = FirebaseStorage.instance.ref('users/${widget.playerId}/player-avatar.jpg');
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final ref = FirebaseStorage.instance.ref('users/${widget.playerId}/player-avatar-$timestamp.jpg');
       final bytes = await pickedFile.readAsBytes();
       final snapshot = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
       final url = await snapshot.ref.getDownloadURL();

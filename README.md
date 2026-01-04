@@ -33,6 +33,8 @@ El proyecto ya incluye `google-services.json` en `android/app/`. Si necesitas us
 2. Habilitar Authentication, Cloud Firestore y Storage
 3. Descargar `google-services.json` y reemplazar en `android/app/`
 
+> ⚠️ Costes: evita usar Firebase Storage para pruebas si no es imprescindible. Cargar archivos al bucket puede generar cargos; trabaja en local o con mocks si solo necesitas validar flujos.
+
 ### 4. Configurar reglas de Firestore
 
 Las reglas están en `firestore.rules`. Aplicarlas desde Firebase Console o con:

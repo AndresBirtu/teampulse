@@ -86,7 +86,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
 
     setState(() => _uploadingPhoto = true);
     try {
-      final ref = FirebaseStorage.instance.ref('users/${user.uid}/coach-avatar.jpg');
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final ref = FirebaseStorage.instance.ref('users/${user.uid}/coach-avatar-$timestamp.jpg');
       final bytes = await picked.readAsBytes();
       final snapshot = await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
       final url = await snapshot.ref.getDownloadURL();
