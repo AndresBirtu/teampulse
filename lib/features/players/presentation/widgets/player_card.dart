@@ -46,8 +46,15 @@ class PlayerCard extends StatelessWidget {
             CircleAvatar(
               radius: 26,
               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.12),
-              backgroundImage: player.photoUrl.isNotEmpty ? NetworkImage(player.photoUrl) : null,
-              child: player.photoUrl.isEmpty
+              backgroundImage: player.photoUrl.isNotEmpty && Uri.tryParse(player.photoUrl)?.hasAbsolutePath == true
+                  ? NetworkImage(player.photoUrl)
+                  : null,
+              onBackgroundImageError: player.photoUrl.isNotEmpty
+                  ? (exception, stackTrace) {
+                      // Silently handle image load errors
+                    }
+                  : null,
+              child: player.photoUrl.isEmpty || Uri.tryParse(player.photoUrl)?.hasAbsolutePath != true
                   ? Text(
                       initials,
                       style: TextStyle(

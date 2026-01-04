@@ -84,23 +84,26 @@ class DashboardRepositoryImpl implements DashboardRepository {
     final userName = (userDoc.data()['name'] as String?) ?? 'Jugador';
 
     final teamRef = _firestore.collection('teams').doc(teamId);
-    await teamRef.collection('players').doc(userId).set({
-      'name': userName,
-      'email': trimmedEmail,
-      'role': 'jugador',
-      'goles': 0,
-      'asistencias': 0,
-      'posicion': '',
-      'partidos': 0,
-      'minutos': 0,
-      'tarjetas_amarillas': 0,
-      'tarjetas_rojas': 0,
-      'teamId': teamId,
-    }, SetOptions(merge: true));
-
-    await _firestore.collection('users').doc(userId).set({
-      'teamId': teamId,
-    }, SetOptions(merge: true));
+    
+    // Ejecutar ambas operaciones en paralelo
+    await Future.wait([
+      teamRef.collection('players').doc(userId).set({
+        'name': userName,
+        'email': trimmedEmail,
+        'role': 'jugador',
+        'goles': 0,
+        'asistencias': 0,
+        'posicion': '',
+        'partidos': 0,
+        'minutos': 0,
+        'tarjetas_amarillas': 0,
+        'tarjetas_rojas': 0,
+        'teamId': teamId,
+      }, SetOptions(merge: true)),
+      _firestore.collection('users').doc(userId).set({
+        'teamId': teamId,
+      }, SetOptions(merge: true)),
+    ]);
   }
 
   @override

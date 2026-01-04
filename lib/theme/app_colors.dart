@@ -37,7 +37,6 @@ class AppColors {
   static const Color secondaryLight = Color(0xFF81C784); // Verde claro
   static const Color secondaryDark = Color(0xFF388E3C); // Verde oscuro
   
-  // Colores de acento adicionales
   static const Color accent = Color(0xFF4CAF50); // Verde acento principal
   static const Color accentLight = Color(0xFF81C784); // Verde acento claro
   

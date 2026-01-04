@@ -144,12 +144,10 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
       ),
       body: ListView(
         children: [
-          // SECCIÓN: INFORMACIÓN DEL PERFIL
           Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                // Foto de perfil
                 Container(
                   width: 130,
                   height: 130,
@@ -164,6 +162,11 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
                     backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                     backgroundImage: (_coachPhotoUrl != null && _coachPhotoUrl!.isNotEmpty)
                         ? NetworkImage(_coachPhotoUrl!)
+                        : null,
+                    onBackgroundImageError: _coachPhotoUrl != null
+                        ? (exception, stackTrace) {
+                            // Handle image load errors silently
+                          }
                         : null,
                     child: (_coachPhotoUrl == null || _coachPhotoUrl!.isEmpty)
                         ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.primary)
@@ -195,7 +198,6 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
           
           const SizedBox(height: 16),
 
-          // SECCIÓN: APARIENCIA
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
             child: Text(
@@ -207,7 +209,6 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
             ),
           ),
 
-          // Selector de Tema
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
@@ -228,7 +229,6 @@ class _CoachProfilePageState extends State<CoachProfilePage> {
 
           const SizedBox(height: 16),
 
-          // SECCIÓN: IDIOMA
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(

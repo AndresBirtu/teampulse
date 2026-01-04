@@ -161,7 +161,27 @@ class _LoginTabState extends ConsumerState<_LoginTab> {
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                Center(child: Image.asset('assets/logo.png', height: 150)),
+                Center(
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: 150,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(75),
+                        ),
+                        child: Icon(
+                          Icons.sports_soccer,
+                          size: 80,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: 18),
                 TextField(
                   controller: _emailController,

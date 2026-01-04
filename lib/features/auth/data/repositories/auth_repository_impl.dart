@@ -37,22 +37,31 @@ class AuthRepositoryImpl implements AuthRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    await teamRef.collection('players').doc(uid).set({
-      'playerId': uid,
-      'teamId': teamRef.id,
-      'name': name,
-      'email': email,
-      'role': 'entrenador',
-    });
-
-    await _firestore.collection('users').doc(uid).set({
-      'name': name,
-      'email': email,
-      'role': 'entrenador',
-      'teamId': teamRef.id,
-      'teamName': teamName,
-      'teamCode': teamCode,
-    }, SetOptions(merge: true));
+    // Ejecutar ambas operaciones en paralelo
+    await Future.wait([
+      teamRef.collection('players').doc(uid).set({
+        'playerId': uid,
+        'teamId': teamRef.id,
+        'name': name,
+        'email': email,
+        'role': 'entrenador',
+        'goles': 0,
+        'asistencias': 0,
+        'posicion': '',
+        'partidos': 0,
+        'minutos': 0,
+        'tarjetas_amarillas': 0,
+        'tarjetas_rojas': 0,
+      }),
+      _firestore.collection('users').doc(uid).set({
+        'name': name,
+        'email': email,
+        'role': 'entrenador',
+        'teamId': teamRef.id,
+        'teamName': teamName,
+        'teamCode': teamCode,
+      }, SetOptions(merge: true)),
+    ]);
   }
 
   @override
@@ -71,22 +80,32 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final teamDoc = teams.docs.first;
-    await teamDoc.reference.collection('players').doc(uid).set({
-      'playerId': uid,
-      'teamId': teamDoc.id,
-      'name': name,
-      'email': email,
-      'role': 'jugador',
-    });
-
-    await _firestore.collection('users').doc(uid).set({
-      'name': name,
-      'email': email,
-      'role': 'jugador',
-      'teamId': teamDoc.id,
-      'teamName': teamDoc['name'],
-      'teamCode': teamDoc['teamCode'],
-    }, SetOptions(merge: true));
+    
+    // Ejecutar ambas operaciones en paralelo
+    await Future.wait([
+      teamDoc.reference.collection('players').doc(uid).set({
+        'playerId': uid,
+        'teamId': teamDoc.id,
+        'name': name,
+        'email': email,
+        'role': 'jugador',
+        'goles': 0,
+        'asistencias': 0,
+        'posicion': '',
+        'partidos': 0,
+        'minutos': 0,
+        'tarjetas_amarillas': 0,
+        'tarjetas_rojas': 0,
+      }),
+      _firestore.collection('users').doc(uid).set({
+        'name': name,
+        'email': email,
+        'role': 'jugador',
+        'teamId': teamDoc.id,
+        'teamName': teamDoc['name'],
+        'teamCode': teamDoc['teamCode'],
+      }, SetOptions(merge: true)),
+    ]);
   }
 
   @override

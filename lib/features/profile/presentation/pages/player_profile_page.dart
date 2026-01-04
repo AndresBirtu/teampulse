@@ -178,8 +178,8 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Mi perfil'),
-          backgroundColor: Theme.of(context).primaryColor,
+        title: Text('profile'.tr()),
+        elevation: 2,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -191,216 +191,180 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi perfil'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: Text('profile'.tr()),
+        elevation: 2,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).primaryColor.withOpacity(0.12),
-                      image: photoUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(photoUrl),
-                              fit: BoxFit.cover,
-                              onError: (_, __) => SizedBox.shrink(),
-                            )
-                          : null,
+      body: ListView(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 3,
                     ),
+                  ),
+                  child: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                    backgroundImage: photoUrl.isNotEmpty
+                        ? NetworkImage(photoUrl)
+                        : null,
+                    onBackgroundImageError: photoUrl.isNotEmpty
+                        ? (exception, stackTrace) {
+                            // Handle image load errors silently
+                          }
+                        : null,
                     child: photoUrl.isEmpty
-                        ? Center(
-                            child: Text(
-                              initials.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
-                              ),
+                        ? Text(
+                            initials.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           )
                         : null,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    name,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    'Posición: ${playerData?['posicion'] ?? '-'}',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Info de estadísticas (solo lectura)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Foto de perfil',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: photoUrlController,
-                      decoration: InputDecoration(
-                        labelText: 'URL de tu foto',
-                        hintText: 'https://example.com/foto.jpg',
-                        border: const OutlineInputBorder(),
-                        suffixIcon: Icon(Icons.photo, color: Theme.of(context).primaryColor),
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    if (photoUrlController.text.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: Colors.grey[200],
-                          image: DecorationImage(
-                            image: NetworkImage(photoUrlController.text),
-                            fit: BoxFit.cover,
-                            onError: (_, __) => SizedBox.shrink(),
-                          ),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title: const Text('Limpiar URL'),
-                                  content: const Text('¿Descartar esta URL?'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-                                    TextButton(
-                                      onPressed: () {
-                                        setState(() => photoUrlController.clear());
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Limpiar'),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            child: Container(
-                              color: Colors.black26,
-                              child: const Icon(Icons.close, color: Colors.white, size: 40),
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
-                            icon: _uploadingPhoto
-                                ? const SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.camera_alt),
-                            label: Text(_uploadingPhoto ? 'Subiendo...' : 'Subir desde galería'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _guardarFoto,
-                            child: const Text('Guardar foto de perfil'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  name,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Posición: ${playerData?['posicion'] ?? '-'}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Foto de perfil',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 32),
-            Card(
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ElevatedButton.icon(
+              onPressed: _uploadingPhoto ? null : _pickAndUploadPhoto,
+              icon: _uploadingPhoto
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.camera_alt),
+              label: Text(_uploadingPhoto ? 'Subiendo...' : 'change_photo'.tr()),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'language'.tr(),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.language,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: const Text('Español'),
+                  trailing: context.locale.languageCode == 'es'
+                      ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
+                      : null,
+                  onTap: () => _changeLanguage(const Locale('es')),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(
+                    Icons.language,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: const Text('English'),
+                  trailing: context.locale.languageCode == 'en'
+                      ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
+                      : null,
+                  onTap: () => _changeLanguage(const Locale('en')),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              'Mis estadísticas',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Text(
-                      'Idioma de la aplicación',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _statItem('Goles', playerData?['goles'] ?? 0),
+                      _statItem('Asistencias', playerData?['asistencias'] ?? 0),
+                      _statItem('Partidos', playerData?['partidos'] ?? 0),
+                    ],
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.language),
-                    title: const Text('Español'),
-                    trailing: context.locale.languageCode == 'es'
-                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
-                        : null,
-                    onTap: () => _changeLanguage(const Locale('es')),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.language_outlined),
-                    title: const Text('English'),
-                    trailing: context.locale.languageCode == 'en'
-                        ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.secondary)
-                        : null,
-                    onTap: () => _changeLanguage(const Locale('en')),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _statItem('Minutos', playerData?['minutos'] ?? 0),
+                      _statItem('Amarillas', playerData?['tarjetas_amarillas'] ?? 0),
+                      _statItem('Rojas', playerData?['tarjetas_rojas'] ?? 0),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Mis estadísticas',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _statItem('Goles', playerData?['goles'] ?? 0),
-                        _statItem('Asistencias', playerData?['asistencias'] ?? 0),
-                        _statItem('Partidos', playerData?['partidos'] ?? 0),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _statItem('Minutos', playerData?['minutos'] ?? 0),
-                        _statItem('Amarillas', playerData?['tarjetas_amarillas'] ?? 0),
-                        _statItem('Rojas', playerData?['tarjetas_rojas'] ?? 0),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }
@@ -410,9 +374,20 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
       children: [
         Text(
           '$value',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
       ],
     );
   }

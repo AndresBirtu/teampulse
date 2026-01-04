@@ -1060,7 +1060,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             children: [
                               const SizedBox(height: 12),
 
-                              // Mostrar promedios de equipo (excluyendo entrenador) y estad├¡sticas propias
                               StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance
                                     .collection('teams')
@@ -1851,13 +1850,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             children: [
               _buildNavItem(
                 context,
-                icon: Icons.home,
-                label: 'Inicio',
-                color: primary,
-                onTap: () {},
-              ),
-              _buildNavItem(
-                context,
                 icon: Icons.calendar_month,
                 label: 'Calendario',
                 color: secondary,
@@ -2142,7 +2134,6 @@ class __NextMatchCardState extends State<_NextMatchCard> {
             .snapshots(),
         builder: (context, nextMatchSnapshot) {
 
-          // Mostrar placeholder mientras carga
           if (!nextMatchSnapshot.hasData) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

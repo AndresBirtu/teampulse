@@ -33,12 +33,6 @@ class LanguageSettingsPage extends StatelessWidget {
             locale: const Locale('en'),
             flag: '🇬🇧',
           ),
-          // Puedes agregar más idiomas aquí en el futuro
-          // _LanguageTile(
-          //   languageName: 'romanian'.tr(),
-          //   locale: const Locale('ro'),
-          //   flag: '🇷🇴',
-          // ),
         ],
       ),
     );
