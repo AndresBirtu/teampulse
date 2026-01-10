@@ -1,6 +1,12 @@
 # TeamPulse
 
-Aplicación móvil para la gestión de equipos deportivos desarrollada con Flutter y Firebase.
+Aplicación multiplataforma para la gestión de equipos deportivos desarrollada con Flutter y Firebase.
+
+## Plataformas Soportadas
+
+- ✅ **Android** (API 34+)
+- ✅ **iOS** (requiere Mac con Xcode para compilar)
+- ✅ **Web** (Chrome, Edge, Firefox, Safari)
 
 ## Requisitos Previos
 
@@ -27,11 +33,16 @@ flutter pub get
 
 ### 3. Configuración de Firebase
 
-El proyecto ya incluye `google-services.json` en `android/app/`. Si necesitas usar tu propia configuración:
+El proyecto incluye configuración Firebase para múltiples plataformas:
+- **Android**: `android/app/google-services.json` (incluido)
+- **iOS**: `ios/Runner/GoogleService-Info.plist` (incluido)
+- **Web**: `lib/firebase_options.dart` (incluido)
+
+Si necesitas usar tu propia configuración de Firebase:
 
 1. Crear proyecto en [Firebase Console](https://console.firebase.google.com/)
 2. Habilitar Authentication, Cloud Firestore y Storage
-3. Descargar `google-services.json` y reemplazar en `android/app/`
+3. Descargar los archivos de configuración para cada plataforma y reemplazar
 
 > ⚠️ Costes: evita usar Firebase Storage para pruebas si no es imprescindible. Cargar archivos al bucket puede generar cargos; trabaja en local o con mocks si solo necesitas validar flujos.
 
@@ -45,10 +56,31 @@ firebase deploy --only firestore:rules
 
 ## Ejecución
 
-### En Emulador Android
+### En Android
 
+Emulador o dispositivo físico:
 ```bash
 flutter run
+```
+
+### En iOS (requiere Mac)
+
+```bash
+flutter run -d ios
+```
+
+### En Web
+
+Habilitar soporte web (solo primera vez):
+```bash
+flutter config --enable-web
+```
+
+Ejecutar en navegador:
+```bash
+flutter run -d chrome
+# o
+flutter run -d edge
 ```
 
 ### Generar APK para dispositivo físico
@@ -139,6 +171,13 @@ flutter clean
 flutter pub get
 flutter build apk
 ```
+
+### Entrega ligera
+
+- Antes de comprimir, elimina artefactos generados: `build/`, `.dart_tool/`, `.gradle/`, `android/.gradle/`, `android/.idea/`, `ios/Pods/`, y cualquier APK/IPA en `build/app/outputs/`.
+- Ejecuta `flutter clean` para borrar temporales.
+- Conserva: `pubspec.yaml`, `pubspec.lock`, `android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist` y los assets usados.
+- Para reconstruir tras recibir el proyecto: `flutter pub get` y luego `flutter run` o `flutter build apk`.
 
 ### Problemas con el emulador
 
